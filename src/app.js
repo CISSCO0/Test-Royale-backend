@@ -1,11 +1,9 @@
-/**
- * Express application setup and configuration
- */
-
 const express = require('express');
 const cors = require('cors');
 const { config } = require('./config/env');
 const initializeSocketIO = require('./sockets');
+const cookieParser = require('cookie-parser');
+
 
 /**
  * Create and configure Express application
@@ -19,6 +17,7 @@ function createApp(server = null) {
   app.use(cors(config.socket.cors));
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  app.use(cookieParser());
 
   // Request logging middleware
   app.use((req, res, next) => {
@@ -56,6 +55,13 @@ function createApp(server = null) {
       // Add actual stats here when room service is available
     });
   });
+
+  // Auth routes
+  const authRoutes = require('./routes/authRoutes');
+  const roomRoutes = require('./routes/roomRoutes');
+  app.use('/api/rooms', roomRoutes);
+  app.use('/api/auth', authRoutes);
+
 
   // 404 handler
   app.use('*', (req, res) => {

@@ -28,7 +28,6 @@ function generateUniqueRoomCode(existingRooms, length = 6) {
   let code;
   let attempts = 0;
   const maxAttempts = 100;
-  
   do {
     code = generateRoomCode(length);
     attempts++;
@@ -37,7 +36,6 @@ function generateUniqueRoomCode(existingRooms, length = 6) {
       throw new Error('Unable to generate unique room code after maximum attempts');
     }
   } while (existingRooms.has ? existingRooms.has(code) : existingRooms[code]);
-  
   return code;
 }
 

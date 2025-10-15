@@ -2,17 +2,20 @@
  * Socket event handlers for room management
  */
 
+
 const roomHandler = (io, socket, roomService, gameController) => {
   
   // Create a new room
   socket.on('create_room', async (data, callback) => {
     try {
-      const result = roomService.createRoom(socket.id, data);
+ 
+      const result =await roomService.createRoom(socket.playerId, data);
       
       if (result.success) {
         // Join the socket to the room
-        socket.join(result.roomCode);
-        
+        socket.join(result.room.code);
+        socket.roomCode = result.room.code;
+
         // Notify the creator
         callback({
           success: true,
@@ -21,7 +24,9 @@ const roomHandler = (io, socket, roomService, gameController) => {
         });
         
         // Log room creation
-        console.log(`Room created: ${result.roomCode} by ${socket.id}`);
+        console.log(`Room created: ${result.room.code} by ${socket.id}`);
+        
+
       } else {
         callback({
           success: false,
@@ -37,11 +42,40 @@ const roomHandler = (io, socket, roomService, gameController) => {
     }
   });
 
+  // Get player room info
+  socket.on('get_player_room_info', async (callback) => {
+    try {
+      const result = await roomService.getPlayerRoom(socket.playerId);
+      callback(result);
+    } catch (error) {
+      console.error('Error getting Player room info:', error);
+      callback({
+        success: false,
+        error: 'Internal server error'
+      });
+    }
+  });
+
+   // Get room info
+  socket.on('get_room_info', async (callback) => {
+    try {
+      const result = await roomService.getRoom(socket.roomCode);
+      callback(result);
+    } catch (error) {
+      console.error('Error getting Player room info:', error);
+      callback({
+        success: false,
+        error: 'Internal server error'
+      });
+    }
+  });
+
+
   // Join an existing room
   socket.on('join_room', async (data, callback) => {
     try {
-      const { roomCode, playerData } = data;
-      const result = roomService.joinRoom(socket.id, roomCode, playerData);
+      const {roomCode} = data;
+      const result = await roomService.joinRoom(socket.playerId, roomCode);
       
       if (result.success) {
         // Join the socket to the room
@@ -354,20 +388,6 @@ const roomHandler = (io, socket, roomService, gameController) => {
       callback(result);
     } catch (error) {
       console.error('Error getting leaderboard:', error);
-      callback({
-        success: false,
-        error: 'Internal server error'
-      });
-    }
-  });
-
-  // Get room info
-  socket.on('get_room_info', async (callback) => {
-    try {
-      const result = roomService.getPlayerRoom(socket.id);
-      callback(result);
-    } catch (error) {
-      console.error('Error getting room info:', error);
       callback({
         success: false,
         error: 'Internal server error'

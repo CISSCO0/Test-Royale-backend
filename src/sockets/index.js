@@ -6,6 +6,9 @@ const { Server } = require('socket.io');
 const roomHandler = require('./roomHandler');
 const RoomService = require('../services/roomService');
 const GameController = require('../controllers/gameController');
+const cookie = require('cookie');
+const AuthService = require('../services/authService');
+const authService = new AuthService();
 
 /**
  * Initialize Socket.io
@@ -21,6 +24,27 @@ function initializeSocketIO(server) {
     },
     transports: ['websocket', 'polling']
   });
+  
+  // Socket.IO middleware to authenticate via cookie
+  io.use((socket, next) => {
+    try {
+      const cookies = socket.handshake.headers.cookie;
+      if (!cookies) return next(new Error('Authentication error: no cookies'));
+      const parsed = cookie.parse(cookies);
+      const token = parsed['auth_token'];
+      if (!token) return next(new Error('Authentication error: no token'));
+
+      const verified = authService.verifyToken(token);
+      if (!verified.success) return next(new Error('Invalid token'));
+
+      socket.playerId = verified.playerId; // attach playerId to socket
+      next();
+    } catch (err) {
+      console.error('Socket auth error:', err);
+      next(new Error('Authentication error'));
+    }
+  });
+
 
   // Initialize services
   const roomService = new RoomService();

@@ -1,7 +1,10 @@
 
 const http = require('http');
+const express = require('express');
+const cors = require('cors');
 const { config, validateConfig } = require('./src/config/env');
 const createApp = require('./src/app');
+const connectDB = require('./src/config/db');
 
 // Validate configuration
 try {
@@ -16,9 +19,21 @@ const server = http.createServer();
 
 // Create Express app and Socket.io instance
 const { app, io } = createApp(server);
+app.use(express.json());
+
+// Backend CORS configuration
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
+
+
 
 // Mount Express app on the server
 server.on('request', app);
+
+// Connect to MongoDB
+connectDB();
 
 // Start server
 const PORT = config.port;
@@ -35,6 +50,8 @@ server.listen(PORT, HOST, () => {
     console.log(`📝 Log level: ${config.logging.level}`);
   }
 });
+
+
 
 // Graceful shutdown handling
 const gracefulShutdown = (signal) => {
@@ -72,5 +89,6 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   gracefulShutdown('UNHANDLED_REJECTION');
 });
+
 
 module.exports = { server, app, io };

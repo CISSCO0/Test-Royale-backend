@@ -1,65 +1,199 @@
-/**
- * Room service to handle room creation, joining, and management
- */
-
 const Room = require('../models/room');
+const Player = require('../models/player');
 const { generateUniqueRoomCode, isValidRoomCode } = require('../utils/generateCode');
+const { isPassportNumber } = require('validator');
 
 class RoomService {
   constructor() {
-    this.rooms = new Map();
-    this.playerToRoom = new Map(); // Maps playerId to roomCode
+    this.activeRooms = new Map(); // In-memory storage for active rooms
   }
 
   /**
    * Create a new room
-   * @param {string} hostId - Socket ID of the host
+   * @param {string} hostId - Host player ID
    * @param {Object} options - Room options
    * @returns {Object} Created room or error
    */
-  createRoom(hostId, options = {}) {
+  async createRoom(hostId, options = {}) {
     try {
+      console.log(hostId +" id  1 ");
+      // Check if host exists
+      const host = await Player.findById(hostId);
+      if (!host) {
+        return {
+          success: false,
+          error: 'Host player not found'
+        };
+      } 
+    
       // Check if host is already in a room
-      if (this.playerToRoom.has(hostId)) {
+      const existingRoom = await Room.findOne({ 
+        'players.playerId': hostId,
+        gameState: { $in: ['waiting', 'playing'] }
+      });
+
+      if (existingRoom) {
         return {
           success: false,
           error: 'Player is already in a room',
-          roomCode: this.playerToRoom.get(hostId)
+          roomCode: existingRoom.code
         };
       }
 
       // Generate unique room code
-      const roomCode = generateUniqueRoomCode(this.rooms, options.codeLength || 6);
-      
+      const roomCode = generateUniqueRoomCode(this.activeRooms, options.codeLength || 6);
+      console.log(roomCode+" from service ");
       // Create new room
-      const room = new Room(
-        roomCode,
+      const room = new Room({
+        code: roomCode,
         hostId,
-        options.maxPlayers || 4
-      );
+        maxPlayers: options.maxPlayers || 4,
+        isPrivate: options.isPrivate || false,
+        players: [{
+          playerId: hostId,
+          name: host.name,
+          isReady: false,
+          isHost: true,
+          score: 0,
+          joinedAt: new Date()
+        }],
+        gameState: 'waiting'
+      });
 
-      // Add host to the room
-      const hostData = {
-        name: options.hostName || 'Host',
-        isHost: true,
-        ...options.hostData
-      };
+      await room.save();
 
-      if (!room.addPlayer(hostId, hostData)) {
-        return {
-          success: false,
-          error: 'Failed to add host to room'
-        };
-      }
-
-      // Store room and player mapping
-      this.rooms.set(roomCode, room);
-      this.playerToRoom.set(hostId, roomCode);
+      // Store in memory for quick access
+      this.activeRooms.set(roomCode, {
+        roomId: room._id,
+        code: roomCode,
+        hostId,
+        isPrivate: room.isPrivate,
+        maxPlayers: room.maxPlayers,
+        players: room.players,
+        gameState: room.gameState,
+        createdAt: room.createdAt
+      });
 
       return {
         success: true,
-        room: room.getSummary(),
-        roomCode
+        room: {
+          id: room._id,
+          code: room.code,
+          hostId: room.hostId,
+          maxPlayers: room.maxPlayers,
+          isPrivate: room.isPrivate,
+          players: room.players.map(p => ({
+            playerId: p.playerId,
+            name: p.name,
+            isReady: p.isReady,
+            isHost: p.isHost,
+            score: p.score,
+            joinedAt: p.joinedAt
+          })),
+          gameState: room.gameState,
+          createdAt: room.createdAt
+        }
+      };
+    } catch (error) {
+      console.log ("error here " + error.message);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  
+  /**
+   * Get room information
+   * @param {string} roomCode - Room code
+   * @returns {Object} Room data or error
+   */
+  async getRoom(roomCode) {
+    try {
+      const room = await Room.findOne({ code: roomCode })
+        .populate('players.playerId', 'name email');
+
+      if (!room) {
+        return {
+          success: false,
+          error: 'Room not found'
+        };
+      }
+
+      return {
+        success: true,
+        room: {
+          id: room._id,
+          code: room.code,
+          hostId: room.hostId,
+          maxPlayers: room.maxPlayers,
+          isPrivate: room.isPrivate,
+          players: room.players.map(p => ({
+            playerId: p.playerId._id,
+            name: p.playerId.name,
+            email: p.playerId.email,
+            isReady: p.isReady,
+            isHost: p.isHost,
+            score: p.score,
+            joinedAt: p.joinedAt
+          })),
+          gameState: room.gameState,
+          gameData: room.gameData,
+          createdAt: room.createdAt,
+          updatedAt: room.updatedAt
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+
+  /**
+   * Get player's current room
+   * @param {string} playerId - Player ID
+   * @returns {Object} Room data or error
+   */
+  async getPlayerRoom(playerId) {
+    try {
+      const room = await Room.findOne({ 
+        'players.playerId': playerId,
+        gameState: { $in: ['waiting', 'playing'] }
+      }).populate('players.playerId', 'name email');
+
+      if (!room) {
+        return {
+          success: false,
+          error: 'Player is not in any room'
+        };
+      }
+
+      return {
+        success: true,
+        room: {
+          id: room._id,
+          code: room.code,
+          hostId: room.hostId,
+          maxPlayers: room.maxPlayers,
+          isPrivate: room.isPrivate,
+          players: room.players.map(p => ({
+            playerId: p.playerId._id,
+            name: p.playerId.name,
+            email: p.playerId.email,
+            isReady: p.isReady,
+            isHost: p.isHost,
+            score: p.score,
+            joinedAt: p.joinedAt
+          })),
+          gameState: room.gameState,
+          gameData: room.gameData,
+          createdAt: room.createdAt,
+          updatedAt: room.updatedAt
+        }
       };
     } catch (error) {
       return {
@@ -71,12 +205,11 @@ class RoomService {
 
   /**
    * Join an existing room
-   * @param {string} playerId - Socket ID of the player
+   * @param {string} playerId - Player ID
    * @param {string} roomCode - Room code to join
-   * @param {Object} playerData - Player information
    * @returns {Object} Join result or error
    */
-  joinRoom(playerId, roomCode, playerData = {}) {
+  async joinRoom(playerId, roomCode) {
     try {
       // Validate room code format
       if (!isValidRoomCode(roomCode)) {
@@ -86,17 +219,31 @@ class RoomService {
         };
       }
 
-      // Check if player is already in a room
-      if (this.playerToRoom.has(playerId)) {
+      // Check if player exists
+      const player = await Player.findById(playerId);
+      if (!player) {
         return {
           success: false,
-          error: 'Player is already in a room',
-          roomCode: this.playerToRoom.get(playerId)
+          error: 'Player not found'
         };
       }
 
-      // Check if room exists
-      const room = this.rooms.get(roomCode);
+      // Check if player is already in a room
+      const existingRoom = await Room.findOne({ 
+        'players.playerId': playerId,
+        gameState: { $in: ['waiting', 'playing'] }
+      });
+      
+      if (existingRoom) {
+        return {
+          success: false,
+          error: 'Player is already in a room',
+          roomCode: existingRoom.code
+        };
+      }
+
+      // Find room
+      const room = await Room.findOne({ code: roomCode });
       if (!room) {
         return {
           success: false,
@@ -105,7 +252,7 @@ class RoomService {
       }
 
       // Check if room is full
-      if (room.isFull()) {
+      if (room.players.length >= room.maxPlayers) {
         return {
           success: false,
           error: 'Room is full'
@@ -121,20 +268,41 @@ class RoomService {
       }
 
       // Add player to room
-      if (!room.addPlayer(playerId, playerData)) {
-        return {
-          success: false,
-          error: 'Failed to join room'
-        };
-      }
+      room.players.push({
+        playerId,
+        name: player.name,
+        isReady: false,
+        isHost: false,
+        score: 0,
+        joinedAt: new Date()
+      });
 
-      // Update player mapping
-      this.playerToRoom.set(playerId, roomCode);
+      await room.save();
+
+      // Update in-memory room
+      const activeRoom = this.activeRooms.get(roomCode);
+      if (activeRoom) {
+        activeRoom.players = room.players;
+      }
 
       return {
         success: true,
-        room: room.getSummary(),
-        roomCode
+        room: {
+          id: room._id,
+          code: room.code,
+          hostId: room.hostId,
+          maxPlayers: room.maxPlayers,
+          players: room.players.map(p => ({
+            playerId: p.playerId,
+            name: p.name,
+            isReady: p.isReady,
+            isHost: p.isHost,
+            score: p.score,
+            joinedAt: p.joinedAt
+          })),
+          gameState: room.gameState,
+          createdAt: room.createdAt
+        }
       };
     } catch (error) {
       return {
@@ -146,45 +314,41 @@ class RoomService {
 
   /**
    * Leave a room
-   * @param {string} playerId - Socket ID of the player
+   * @param {string} playerId - Player ID
    * @returns {Object} Leave result
    */
-  leaveRoom(playerId) {
+  async leaveRoom(playerId) {
     try {
-      const roomCode = this.playerToRoom.get(playerId);
-      if (!roomCode) {
+      const room = await Room.findOne({ 
+        'players.playerId': playerId,
+        gameState: { $in: ['waiting', 'playing'] }
+      });
+
+      if (!room) {
         return {
           success: false,
           error: 'Player is not in any room'
         };
       }
 
-      const room = this.rooms.get(roomCode);
-      if (!room) {
-        // Clean up orphaned player mapping
-        this.playerToRoom.delete(playerId);
-        return {
-          success: false,
-          error: 'Room not found'
-        };
-      }
-
-      const wasHost = room.hostId === playerId;
-      const removed = room.removePlayer(playerId);
+      const wasHost = room.hostId.toString() === playerId;
+      const playerIndex = room.players.findIndex(p => p.playerId.toString() === playerId);
       
-      if (!removed) {
+      if (playerIndex === -1) {
         return {
           success: false,
-          error: 'Failed to remove player from room'
+          error: 'Player not found in room'
         };
       }
 
-      // Remove player mapping
-      this.playerToRoom.delete(playerId);
+      // Remove player from room
+      room.players.splice(playerIndex, 1);
 
       // If room is empty, delete it
-      if (room.isEmpty()) {
-        this.rooms.delete(roomCode);
+      if (room.players.length === 0) {
+        await Room.findByIdAndDelete(room._id);
+        this.activeRooms.delete(room.code);
+        
         return {
           success: true,
           roomDeleted: true,
@@ -194,15 +358,37 @@ class RoomService {
 
       // If host left, assign new host
       if (wasHost) {
-        const players = room.getAllPlayers();
-        if (players.length > 0) {
-          room.hostId = players[0].id;
-        }
+        room.hostId = room.players[0].playerId;
+        room.players[0].isHost = true;
+      }
+
+      await room.save();
+
+      // Update in-memory room
+      const activeRoom = this.activeRooms.get(room.code);
+      if (activeRoom) {
+        activeRoom.players = room.players;
+        activeRoom.hostId = room.hostId;
       }
 
       return {
         success: true,
-        room: room.getSummary(),
+        room: {
+          id: room._id,
+          code: room.code,
+          hostId: room.hostId,
+          maxPlayers: room.maxPlayers,
+          players: room.players.map(p => ({
+            playerId: p.playerId,
+            name: p.name,
+            isReady: p.isReady,
+            isHost: p.isHost,
+            score: p.score,
+            joinedAt: p.joinedAt
+          })),
+          gameState: room.gameState,
+          createdAt: room.createdAt
+        },
         wasHost,
         newHost: wasHost ? room.hostId : null
       };
@@ -215,117 +401,271 @@ class RoomService {
   }
 
   /**
-   * Get room information
-   * @param {string} roomCode - Room code
-   * @returns {Object} Room data or error
-   */
-  getRoom(roomCode) {
-    const room = this.rooms.get(roomCode);
-    if (!room) {
-      return {
-        success: false,
-        error: 'Room not found'
-      };
-    }
-
-    return {
-      success: true,
-      room: room.getSummary()
-    };
-  }
-
-  /**
-   * Get player's current room
-   * @param {string} playerId - Socket ID of the player
-   * @returns {Object} Room data or error
-   */
-  getPlayerRoom(playerId) {
-    const roomCode = this.playerToRoom.get(playerId);
-    if (!roomCode) {
-      return {
-        success: false,
-        error: 'Player is not in any room'
-      };
-    }
-
-    return this.getRoom(roomCode);
-  }
-
-  /**
    * Update player ready status
-   * @param {string} playerId - Socket ID of the player
+   * @param {string} playerId - Player ID
    * @param {boolean} isReady - Ready status
    * @returns {Object} Update result
    */
-  setPlayerReady(playerId, isReady) {
-    const roomCode = this.playerToRoom.get(playerId);
-    if (!roomCode) {
+  async setPlayerReady(playerId, isReady) {
+    try {
+      const room = await Room.findOne({ 
+        'players.playerId': playerId,
+        gameState: 'waiting'
+      });
+
+      if (!room) {
+        return {
+          success: false,
+          error: 'Player is not in a waiting room'
+        };
+      }
+
+      const playerIndex = room.players.findIndex(p => p.playerId.toString() === playerId);
+      if (playerIndex === -1) {
+        return {
+          success: false,
+          error: 'Player not found in room'
+        };
+      }
+
+      // Update player ready status
+      room.players[playerIndex].isReady = isReady;
+      await room.save();
+
+      // Update in-memory room
+      const activeRoom = this.activeRooms.get(room.code);
+      if (activeRoom) {
+        activeRoom.players = room.players;
+      }
+
+      // Check if all players are ready
+      const allReady = room.players.every(p => p.isReady);
+
+      return {
+        success: true,
+        room: {
+          id: room._id,
+          code: room.code,
+          hostId: room.hostId,
+          maxPlayers: room.maxPlayers,
+          players: room.players.map(p => ({
+            playerId: p.playerId,
+            name: p.name,
+            isReady: p.isReady,
+            isHost: p.isHost,
+            score: p.score,
+            joinedAt: p.joinedAt
+          })),
+          gameState: room.gameState,
+          createdAt: room.createdAt
+        },
+        allReady
+      };
+    } catch (error) {
       return {
         success: false,
-        error: 'Player is not in any room'
+        error: error.message
       };
     }
+  }
 
-    const room = this.rooms.get(roomCode);
-    if (!room) {
+  /**
+   * Update room game state
+   * @param {string} roomCode - Room code
+   * @param {string} gameState - New game state
+   * @param {Object} gameData - Game data
+   * @returns {Object} Update result
+   */
+  async updateRoomGameState(roomCode, gameState, gameData = {}) {
+    try {
+      const room = await Room.findOne({ code: roomCode });
+      if (!room) {
+        return {
+          success: false,
+          error: 'Room not found'
+        };
+      }
+
+      room.gameState = gameState;
+      if (Object.keys(gameData).length > 0) {
+        room.gameData = { ...room.gameData, ...gameData };
+      }
+
+      await room.save();
+
+      // Update in-memory room
+      const activeRoom = this.activeRooms.get(roomCode);
+      if (activeRoom) {
+        activeRoom.gameState = gameState;
+        activeRoom.gameData = room.gameData;
+      }
+
+      return {
+        success: true,
+        room: {
+          id: room._id,
+          code: room.code,
+          hostId: room.hostId,
+          maxPlayers: room.maxPlayers,
+          players: room.players,
+          gameState: room.gameState,
+          gameData: room.gameData,
+          createdAt: room.createdAt,
+          updatedAt: room.updatedAt
+        }
+      };
+    } catch (error) {
       return {
         success: false,
-        error: 'Room not found'
+        error: error.message
       };
     }
-
-    const updated = room.setPlayerReady(playerId, isReady);
-    if (!updated) {
-      return {
-        success: false,
-        error: 'Failed to update player ready status'
-      };
-    }
-
-    return {
-      success: true,
-      room: room.getSummary(),
-      allReady: room.allPlayersReady()
-    };
   }
 
   /**
    * Get all active rooms
-   * @returns {Array} Array of room summaries
+   * @param {Object} options - Query options
+   * @returns {Object} List of active rooms
    */
-  getAllRooms() {
-    return Array.from(this.rooms.values()).map(room => room.getSummary());
+  async getAllRooms(options = {}) {
+    try {
+      const { limit = 50, gameState = null } = options;
+      
+      const query = {};
+      if (gameState) {
+        query.gameState = gameState;
+      }
+
+      const rooms = await Room.find(query)
+        .populate('players.playerId', 'name email')
+        .sort({ createdAt: -1 })
+        .limit(limit);
+
+      return {
+        success: true,
+        rooms: rooms.map(room => ({
+          id: room._id,
+          code: room.code,
+          hostId: room.hostId,
+          maxPlayers: room.maxPlayers,
+          currentPlayers: room.players.length,
+          players: room.players.map(p => ({
+            playerId: p.playerId._id,
+            name: p.playerId.name,
+            isReady: p.isReady,
+            isHost: p.isHost,
+            score: p.score
+          })),
+          gameState: room.gameState,
+          createdAt: room.createdAt
+        })),
+        count: rooms.length
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   }
 
   /**
    * Clean up empty rooms
-   * @returns {number} Number of rooms cleaned up
+   * @returns {Object} Cleanup result
    */
-  cleanupEmptyRooms() {
-    let cleaned = 0;
-    for (const [roomCode, room] of this.rooms.entries()) {
-      if (room.isEmpty()) {
-        this.rooms.delete(roomCode);
-        cleaned++;
+  async cleanupEmptyRooms() {
+    try {
+      const emptyRooms = await Room.find({
+        $or: [
+          { players: { $size: 0 } },
+          { gameState: 'finished' }
+        ]
+      });
+
+      const deletedCount = await Room.deleteMany({
+        $or: [
+          { players: { $size: 0 } },
+          { gameState: 'finished' }
+        ]
+      });
+
+      // Clean up in-memory rooms
+      for (const room of emptyRooms) {
+        this.activeRooms.delete(room.code);
       }
+
+      return {
+        success: true,
+        deletedCount: deletedCount.deletedCount,
+        message: `Cleaned up ${deletedCount.deletedCount} empty rooms`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
     }
-    return cleaned;
   }
 
   /**
    * Get room statistics
    * @returns {Object} Room statistics
    */
-  getStats() {
-    return {
-      totalRooms: this.rooms.size,
-      totalPlayers: this.playerToRoom.size,
-      roomsByState: {
-        waiting: Array.from(this.rooms.values()).filter(r => r.gameState === 'waiting').length,
-        playing: Array.from(this.rooms.values()).filter(r => r.gameState === 'playing').length,
-        finished: Array.from(this.rooms.values()).filter(r => r.gameState === 'finished').length
-      }
-    };
+  async getRoomStats() {
+    try {
+      const totalRooms = await Room.countDocuments();
+      const activeRooms = await Room.countDocuments({
+        gameState: { $in: ['waiting', 'playing'] }
+      });
+      
+      const roomsByState = await Room.aggregate([
+        {
+          $group: {
+            _id: '$gameState',
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+
+      const totalPlayers = await Room.aggregate([
+        { $unwind: '$players' },
+        { $group: { _id: null, count: { $sum: 1 } } }
+      ]);
+
+      return {
+        success: true,
+        stats: {
+          totalRooms,
+          activeRooms,
+          roomsByState: roomsByState.reduce((acc, item) => {
+            acc[item._id] = item.count;
+            return acc;
+          }, {}),
+          totalPlayers: totalPlayers[0]?.count || 0
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Get active rooms from memory
+   * @returns {Array} List of active rooms
+   */
+  getActiveRooms() {
+    return Array.from(this.activeRooms.values());
+  }
+
+  /**
+   * Clear room from memory
+   * @param {string} roomCode - Room code
+   */
+  clearRoomFromMemory(roomCode) {
+    this.activeRooms.delete(roomCode);
   }
 }
 
