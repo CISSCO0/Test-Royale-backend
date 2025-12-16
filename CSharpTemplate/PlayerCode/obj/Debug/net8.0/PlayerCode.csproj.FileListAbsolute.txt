@@ -1,0 +1,4 @@
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerCode\bin\Debug\net8.0\PlayerCode.deps.json
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerCode\obj\Debug\net8.0\PlayerCode.GeneratedMSBuildEditorConfig.editorconfig
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerCode\obj\Debug\net8.0\PlayerCode.AssemblyInfoInputs.cache
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerCode\obj\Debug\net8.0\PlayerCode.AssemblyInfo.cs

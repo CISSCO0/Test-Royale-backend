@@ -3,6 +3,7 @@ const RoomService = require('../services/roomService');
 const roomService = new RoomService();
 
 class RoomController {
+  
   // POST /api/rooms/create
   async createRoom(req, res) {
     try {

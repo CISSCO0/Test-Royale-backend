@@ -1,6 +1,3 @@
-/**
- * Player controller to handle player-related operations and coordinate with RoomService
- */
 
 class PlayerController {
   constructor(playerService, roomService) {

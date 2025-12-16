@@ -1,7 +1,7 @@
 const Room = require('../models/room');
 const Player = require('../models/player');
 const { generateUniqueRoomCode, isValidRoomCode } = require('../utils/generateCode');
-const { isPassportNumber } = require('validator');
+const mongoose = require('mongoose');
 
 class RoomService {
   constructor() {
@@ -16,7 +16,7 @@ class RoomService {
    */
   async createRoom(hostId, options = {}) {
     try {
-      console.log(hostId +" id  1 ");
+    
       // Check if host exists
       const host = await Player.findById(hostId);
       if (!host) {
@@ -42,15 +42,14 @@ class RoomService {
 
       // Generate unique room code
       const roomCode = generateUniqueRoomCode(this.activeRooms, options.codeLength || 6);
-      console.log(roomCode+" from service ");
+    
       // Create new room
       const room = new Room({
         code: roomCode,
         hostId,
         maxPlayers: options.maxPlayers || 4,
-        isPrivate: options.isPrivate || false,
         players: [{
-          playerId: hostId,
+          playerId: new mongoose.Types.ObjectId(hostId),
           name: host.name,
           isReady: false,
           isHost: true,
@@ -67,7 +66,6 @@ class RoomService {
         roomId: room._id,
         code: roomCode,
         hostId,
-        isPrivate: room.isPrivate,
         maxPlayers: room.maxPlayers,
         players: room.players,
         gameState: room.gameState,
@@ -81,7 +79,6 @@ class RoomService {
           code: room.code,
           hostId: room.hostId,
           maxPlayers: room.maxPlayers,
-          isPrivate: room.isPrivate,
           players: room.players.map(p => ({
             playerId: p.playerId,
             name: p.name,
@@ -95,7 +92,7 @@ class RoomService {
         }
       };
     } catch (error) {
-      console.log ("error here " + error.message);
+
       return {
         success: false,
         error: error.message
@@ -269,7 +266,7 @@ class RoomService {
 
       // Add player to room
       room.players.push({
-        playerId,
+        playerId: new mongoose.Types.ObjectId(playerId),
         name: player.name,
         isReady: false,
         isHost: false,
@@ -318,7 +315,10 @@ class RoomService {
    * @returns {Object} Leave result
    */
   async leaveRoom(playerId) {
+    
     try {
+      console.log("Leaving room for playerId:", playerId);
+    
       const room = await Room.findOne({ 
         'players.playerId': playerId,
         gameState: { $in: ['waiting', 'playing'] }
@@ -331,6 +331,13 @@ class RoomService {
         };
       }
 
+      if (room.gameState !== 'waiting') {
+        return {
+          success: false,
+          error: 'Cannot leave room after game has started'
+        };
+      }
+    
       const wasHost = room.hostId.toString() === playerId;
       const playerIndex = room.players.findIndex(p => p.playerId.toString() === playerId);
       
@@ -344,24 +351,22 @@ class RoomService {
       // Remove player from room
       room.players.splice(playerIndex, 1);
 
+      let deletedRoom = false;
+      
       // If room is empty, delete it
       if (room.players.length === 0) {
         await Room.findByIdAndDelete(room._id);
         this.activeRooms.delete(room.code);
-        
-        return {
-          success: true,
-          roomDeleted: true,
-          message: 'Left room and room was deleted'
-        };
+        deletedRoom = true;
       }
 
+  if (!deletedRoom){
       // If host left, assign new host
-      if (wasHost) {
+      if (wasHost ) {
         room.hostId = room.players[0].playerId;
         room.players[0].isHost = true;
       }
-
+      
       await room.save();
 
       // Update in-memory room
@@ -371,6 +376,7 @@ class RoomService {
         activeRoom.hostId = room.hostId;
       }
 
+    }
       return {
         success: true,
         room: {
@@ -390,8 +396,8 @@ class RoomService {
           createdAt: room.createdAt
         },
         wasHost,
-        newHost: wasHost ? room.hostId : null
-      };
+        newHost: wasHost ? room.hostId : null,
+        deletedRoom};
     } catch (error) {
       return {
         success: false,
@@ -421,16 +427,17 @@ class RoomService {
       }
 
       const playerIndex = room.players.findIndex(p => p.playerId.toString() === playerId);
+
       if (playerIndex === -1) {
         return {
           success: false,
           error: 'Player not found in room'
         };
       }
-
       // Update player ready status
       room.players[playerIndex].isReady = isReady;
-      await room.save();
+      room.markModified(`players.${playerIndex}.isReady`);
+      await room.save(); 
 
       // Update in-memory room
       const activeRoom = this.activeRooms.get(room.code);
@@ -468,7 +475,7 @@ class RoomService {
       };
     }
   }
-
+//---------------------------------
   /**
    * Update room game state
    * @param {string} roomCode - Room code

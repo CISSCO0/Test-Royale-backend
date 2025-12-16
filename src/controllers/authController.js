@@ -3,19 +3,48 @@ const AuthService = require('../services/authService');
 const authService = new AuthService();
 
 class AuthController {
-
-  // POST /api/auth/register
-  async register(req, res) {
+  
+  // POST /api/auth/start-registration
+  async startRegistration(req, res) {
     try {
-      const result = await authService.register(req.body);
+      console.log("Received registration data:", req.body);
+      const result = await authService.startRegistration(req.body);
+
       if (!result.success) {
         return res.status(400).json({ error: result.error });
       }
-      return res.status(201).json(result);
+
+      return res.status(200).json(result);
+
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
   }
+
+  // POST /api/auth/verify-registration
+  async verifyRegistration(req, res) {
+    try {
+      const { email, code } = req.body;
+
+      if (!email || !code) {
+        return res.status(400).json({
+          error: "Email and code are required"
+        });
+      }
+
+      const result = await authService.verifyRegistration(email, code, res);
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      return res.status(200).json(result);
+
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
 
   // POST /api/auth/login
   async login(req, res) {

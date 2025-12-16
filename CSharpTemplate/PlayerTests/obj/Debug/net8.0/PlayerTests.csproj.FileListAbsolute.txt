@@ -1,0 +1,13 @@
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerTests\bin\Debug\net8.0\CoverletSourceRootsMapping_PlayerTests
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerTests\bin\Debug\net8.0\testhost.exe
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerTests\bin\Debug\net8.0\testhost.dll
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerTests\bin\Debug\net8.0\Microsoft.VisualStudio.TestPlatform.MSTest.TestAdapter.dll
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerTests\bin\Debug\net8.0\Microsoft.VisualStudio.TestPlatform.MSTestAdapter.PlatformServices.dll
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerTests\bin\Debug\net8.0\Microsoft.TestPlatform.AdapterUtilities.dll
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerTests\bin\Debug\net8.0\PlayerTests.deps.json
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerTests\bin\Debug\net8.0\PlayerTests.runtimeconfig.json
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerTests\obj\Debug\net8.0\PlayerTests.GeneratedMSBuildEditorConfig.editorconfig
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerTests\obj\Debug\net8.0\PlayerTests.AssemblyInfoInputs.cache
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerTests\obj\Debug\net8.0\PlayerTests.AssemblyInfo.cs
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerTests\obj\Debug\net8.0\PlayerTe.80F4594F.Up2Date
+D:\workspace\Test-Royale\Backend\CSharpTemplate\PlayerTests\obj\Debug\net8.0\PlayerTests.genruntimeconfig.cache

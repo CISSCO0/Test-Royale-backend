@@ -4,7 +4,6 @@ const Badge = require('../models/badge');
 
 class PlayerService {
   constructor() {
-    // This service now works with the database instead of in-memory storage
   }
 
   /**
@@ -53,6 +52,8 @@ class PlayerService {
     }
   }
 
+
+  //-------------------------------------------------------------------------------
   /**
    * Get player by email
    * @param {string} email - Player email

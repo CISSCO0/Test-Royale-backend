@@ -1,6 +1,7 @@
 const Player = require('../models/player');
 const jwt = require('jsonwebtoken');
-
+const sendEmail = require('./nodemailerService');
+const TempCode = require('../models/tempCode');
 class AuthService {
   constructor() {
     this.jwtSecret = process.env.JWT_SECRET;
@@ -9,78 +10,101 @@ class AuthService {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000 , // 7 days
+      path: "/"  
     };
   }
 
   /**
-   * Register a new player
-   * @param {Object} playerData - Player registration data
-   * @param {Object} res - Express response object
-   * @returns {Object} Registration result
+   * 
+   * @param {*} playerData 
+   * @returns 
    */
-  async register(playerData, res) {
-    try {
-      const { email, password, name } = playerData;
 
-      // Validate input
-      if (!email || !password) {
-        return {
-          success: false,
-          error: 'Email and password are required'
-        };
-      }
+  async startRegistration(playerData) {
+  const { email, password, name } = playerData;
 
-      if (password.length < 6) {
-        return {
-          success: false,
-          error: 'Password must be at least 6 characters long'
-        };
-      }
- 
-      // Check if player already exists
-      const existingPlayer = await Player.findOne({ email });
-      if (existingPlayer) {
-        return {
-          success: false,
-          error: 'Player with this email already exists'
-        };
-      }
-
-      // Create new player
-      const player = new Player({
-        email,
-        password,
-        name: name || 'Unknown Player'
-      });
-
-      await player.save();
-      // Generate JWT token and set cookie
-      const token = this.generateToken(player._id);
-      
-      // Make sure res object exists before using it
-      if (res && typeof res.cookie === 'function') {
-        res.cookie('auth_token', token, this.cookieOptions);
-      }
-
-      return {
-        success: true,
-        player: {
-          id: player._id,
-          email: player.email,
-          name: player.name,
-          totalScore: player.totalScore,
-          totalGamesPlayed: player.totalGamesPlayed,
-          winRate: player.winRate
-        }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message
-      };
-    }
+  if (!email || !password) {
+    return { success: false, error: "Email and password are required" };
   }
+
+  const existingPlayer = await Player.findOne({ email });
+  if (existingPlayer) {
+    return { success: false, error: "Email already registered before " };
+  }
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+  await TempCode.findOneAndUpdate(
+    { email },
+    { email, password, name, code, expiresAt: Date.now() + 5 * 60 * 1000 },
+    { upsert: true }
+  );
+
+  await sendEmail(
+  email,
+  `Hello,
+
+Thank you for registering at Warrior Arena! 
+
+Please use the following verification code to complete your registration:
+
+${code}
+
+This code will expire in 5 minutes.
+
+If you did not sign up for an account, please ignore this email.
+
+See you in the battle!
+- The Warrior Arena Team`
+);
+
+  return { success: true, message: "Verification code sent" };
+}
+
+async verifyRegistration(email, code, res) {
+  const record = await TempCode.findOne({ email });
+
+  if (!record) {
+    return { success: false, error: "No pending registration" };
+  }
+
+  if (record.code !== code) {
+    return { success: false, error: "Invalid code" };
+  }
+
+  if (record.expiresAt < Date.now()) {
+    return { success: false, error: "Code expired" };
+  }
+
+  const player = new Player({
+    email: record.email,
+    password: record.password,
+    name: record.name || "Unknown Player"
+  });
+
+  await player.save();
+  await TempCode.deleteOne({ email });
+
+  const token = this.generateToken(player._id);
+  if (res && res.cookie) {
+    res.cookie("auth_token", token, this.cookieOptions);
+  }
+
+  return {
+    success: true,
+    token,
+    player: {
+      playerId: player._id,
+      email: player.email,
+      name: player.name,
+      totalScore: player.totalScore,
+      totalGamesPlayed: player.totalGamesPlayed,
+      winRate: player.winRate
+    }
+  };
+}
+
 
   /**
    * Login a player
@@ -91,6 +115,7 @@ class AuthService {
   async login(credentials, res) {
     try {
       const { email, password } = credentials;
+
 
       // Validate input
       if (!email || !password) {
@@ -121,6 +146,7 @@ class AuthService {
       // Generate JWT token and set cookie
       const token = this.generateToken(player._id);
       
+      console.log("Generated token for player:", token);
       // Make sure res object exists before using it
       if (res && typeof res.cookie === 'function') {
         res.cookie('auth_token', token, this.cookieOptions);
@@ -130,7 +156,7 @@ class AuthService {
         success: true,
         token, // Include token in response
         player: {
-          id: player._id,
+          playerId: player._id,
           email: player.email,
           name: player.name,
           totalScore: player.totalScore,
@@ -162,7 +188,8 @@ class AuthService {
       res.clearCookie('auth_token', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        sameSite: 'strict' ,
+        path: "/" 
       });
 
       return {
@@ -218,7 +245,6 @@ class AuthService {
   async getProfile(playerId) {
     try {
       
-
       const player = await Player.findById(playerId).select('-password');
        
       if (!player) {
@@ -231,7 +257,7 @@ class AuthService {
       return {
         success: true,
         player: {
-          id: player._id,
+          playerId: player._id,
           email: player.email,
           name: player.name,
           totalScore: player.totalScore,
@@ -297,7 +323,7 @@ class AuthService {
       return {
         success: true,
         player: {
-          id: player._id,
+          playerId: player._id,
           email: player.email,
           name: player.name,
           totalScore: player.totalScore,
@@ -370,5 +396,7 @@ class AuthService {
     }
   }
 }
+
+
 
 module.exports = AuthService;

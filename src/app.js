@@ -4,7 +4,7 @@ const { config } = require('./config/env');
 const initializeSocketIO = require('./sockets');
 const cookieParser = require('cookie-parser');
 
-
+const Code = require('./models/code');
 /**
  * Create and configure Express application
  * @param {Object} server - HTTP server instance (optional)
@@ -56,12 +56,15 @@ function createApp(server = null) {
     });
   });
 
-  // Auth routes
+  //Routes
   const authRoutes = require('./routes/authRoutes');
   const roomRoutes = require('./routes/roomRoutes');
-  app.use('/api/rooms', roomRoutes);
+  const codeRoutes = require('./routes/codeRoutes')
+  const gameRoutes = require('./routes/gameRoutes');
+  app.use('/api/rooms',roomRoutes);
   app.use('/api/auth', authRoutes);
-
+  app.use('/api/code', codeRoutes);
+  app.use('/api/game', gameRoutes);
 
   // 404 handler
   app.use('*', (req, res) => {

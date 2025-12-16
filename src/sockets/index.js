@@ -3,9 +3,9 @@
  */
 
 const { Server } = require('socket.io');
-const roomHandler = require('./roomHandler');
+const socketHandler = require('./socketHandler');
 const RoomService = require('../services/roomService');
-const GameController = require('../controllers/gameController');
+const GameService = require('../services/gameService');
 const cookie = require('cookie');
 const AuthService = require('../services/authService');
 const authService = new AuthService();
@@ -48,14 +48,13 @@ function initializeSocketIO(server) {
 
   // Initialize services
   const roomService = new RoomService();
-  const gameController = new GameController(roomService);
-
+  const gameService = new GameService();
   // Handle connection
   io.on('connection', (socket) => {
     console.log(`Client connected: ${socket.id}`);
     
     // Initialize room handler for this socket
-    roomHandler(io, socket, roomService, gameController);
+    socketHandler(io, socket, roomService, gameService);
     
     // Send connection confirmation
     socket.emit('connected', {

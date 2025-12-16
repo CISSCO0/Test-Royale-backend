@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "player_692c23fdb90f3190eaa7a2c9_1765794791348", "player_692c23fdb90f3190eaa7a2c9_1765794791348", "{673835C4-69BA-4304-A850-51F744E46940}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlayerCode", "player_692c23fdb90f3190eaa7a2c9_1765794791348\PlayerCode\PlayerCode.csproj", "{299E201D-0D96-4013-AC31-4394EFE15E21}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlayerTests", "player_692c23fdb90f3190eaa7a2c9_1765794791348\PlayerTests\PlayerTests.csproj", "{919DC810-78B8-4656-8EC3-C456AA7EEDBE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{299E201D-0D96-4013-AC31-4394EFE15E21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{299E201D-0D96-4013-AC31-4394EFE15E21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{299E201D-0D96-4013-AC31-4394EFE15E21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{299E201D-0D96-4013-AC31-4394EFE15E21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{919DC810-78B8-4656-8EC3-C456AA7EEDBE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{919DC810-78B8-4656-8EC3-C456AA7EEDBE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{919DC810-78B8-4656-8EC3-C456AA7EEDBE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{919DC810-78B8-4656-8EC3-C456AA7EEDBE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{299E201D-0D96-4013-AC31-4394EFE15E21} = {673835C4-69BA-4304-A850-51F744E46940}
+		{919DC810-78B8-4656-8EC3-C456AA7EEDBE} = {673835C4-69BA-4304-A850-51F744E46940}
+	EndGlobalSection
+EndGlobal

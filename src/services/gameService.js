@@ -1,335 +1,429 @@
 const Game = require('../models/game');
 const Player = require('../models/player');
-const Code = require('../models/code');
-const Room = require('../models/room');
 const Achievement = require('../models/achievement');
 const Badge = require('../models/badge');
-
+const CodeService = require('./codeService');
+const RoomService = require('./roomService');
+const PlayerService = require('./playerService');
+const path = require('path');
+const { base } = require('../models/code');
 class GameService {
+
   constructor() {
     this.activeGames = new Map(); // In-memory storage for active games
+    this.codeService = new CodeService(); 
+    this.roomService = new RoomService();
+    this.playerService = new PlayerService();
   }
 
-  /**
-   * Start a new game
-   * @param {string} roomCode - Room code
-   * @param {string} codeId - Code challenge ID
-   * @returns {Object} Game start result
-   */
-  async startGame(roomCode, codeId) {
-    try {
-      // Get room and code
-      const room = await Room.findOne({ code: roomCode }).populate('players.playerId');
-      const codeChallenge = await Code.findById(codeId);
-
-      if (!room) {
-        return {
-          success: false,
-          error: 'Room not found'
-        };
-      }
-
-      if (!codeChallenge) {
-        return {
-          success: false,
-          error: 'Code challenge not found'
-        };
-      }
-
-      if (room.gameState !== 'waiting') {
-        return {
-          success: false,
-          error: 'Game already started or finished'
-        };
-      }
-
-      if (room.players.length < 2) {
-        return {
-          success: false,
-          error: 'Need at least 2 players to start game'
-        };
-      }
-
-      // Create game
-      const game = new Game({
-        roomCode,
-        codeId,
-        players: room.players.map(player => ({
-          playerId: player.playerId._id,
-          playerCode: '',
-          score: 0,
-          coverageScore: 0,
-          mutationScore: 0,
-          redundancyPenalty: 0,
-          badgesEarned: [],
-          feedback: '',
-          gameDuration: 0
-        })),
-        gameState: 'playing',
-        startedAt: new Date()
-      });
-
-      await game.save();
-
-      // Update room state
-      room.gameState = 'playing';
-      room.gameData = {
-        gameId: game._id,
-        codeChallenge: {
-          title: codeChallenge.title,
-          description: codeChallenge.description,
-          language: codeChallenge.language,
-          baseCode: codeChallenge.baseCode
-        }
-      };
-      await room.save();
-
-      // Store in memory for quick access
-      this.activeGames.set(game._id.toString(), {
-        gameId: game._id,
-        roomCode,
-        codeId,
-        players: game.players,
-        startedAt: game.startedAt,
-        timeLimit: 300 // 5 minutes default
-      });
-
-      return {
-        success: true,
-        game: {
-          id: game._id,
-          roomCode,
-          codeChallenge: {
-            title: codeChallenge.title,
-            description: codeChallenge.description,
-            language: codeChallenge.language,
-            baseCode: codeChallenge.baseCode
-          },
-          players: game.players.map(p => ({
-            playerId: p.playerId,
-            score: p.score,
-            gameDuration: p.gameDuration
-          })),
-          startedAt: game.startedAt,
-          timeLimit: 300
-        }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
-  /**
-   * Submit player's test code
-   * @param {string} gameId - Game ID
-   * @param {string} playerId - Player ID
-   * @param {string} testCode - Player's test code
-   * @returns {Object} Submission result
-   */
-  async submitTestCode(gameId, playerId, testCode) {
+  async getGame(gameId) {
     try {
       const game = await Game.findById(gameId);
       if (!game) {
-        return {
-          success: false,
-          error: 'Game not found'
-        };
+        return { success: false, error: 'Game not found' };
       }
-
-      if (game.gameState !== 'playing') {
-        return {
-          success: false,
-          error: 'Game is not active'
-        };
-      }
-
-      // Find player in game
-      const playerIndex = game.players.findIndex(p => p.playerId.toString() === playerId);
-      if (playerIndex === -1) {
-        return {
-          success: false,
-          error: 'Player not in this game'
-        };
-      }
-
-      // Calculate game duration
-      const gameDuration = Math.floor((new Date() - game.startedAt) / 1000);
-      
-      // Update player's submission
-      game.players[playerIndex].playerCode = testCode;
-      game.players[playerIndex].submittedAt = new Date();
-      game.players[playerIndex].gameDuration = gameDuration;
-
-      await game.save();
-
-      // Update in-memory game
-      const activeGame = this.activeGames.get(gameId.toString());
-      if (activeGame) {
-        const activePlayerIndex = activeGame.players.findIndex(p => p.playerId.toString() === playerId);
-        if (activePlayerIndex !== -1) {
-          activeGame.players[activePlayerIndex].playerCode = testCode;
-          activeGame.players[activePlayerIndex].submittedAt = new Date();
-          activeGame.players[activePlayerIndex].gameDuration = gameDuration;
-        }
-      }
-
-      return {
-        success: true,
-        message: 'Test code submitted successfully',
-        gameDuration
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message
-      };
+      return { success: true, game };
+    }catch (error) {
+      return { success: false, error: error.message };
     }
   }
 
-  /**
-   * Calculate and update scores for all players
-   * @param {string} gameId - Game ID
-   * @returns {Object} Scoring result
-   */
-  async calculateScores(gameId) {
+  async startGame(PlayerId) {
+  try {
+    
+    const player = await this.playerService.getPlayer(PlayerId);
+    if (!player.success) return {success:false , error: player.error};
+
+    const playerRoomResult = await this.roomService.getPlayerRoom(PlayerId);
+    const room = playerRoomResult.room;
+    if (!playerRoomResult.success) return { success: false, error: 'Room not found' };
+    if (room.gameState !== 'waiting') return { success: false, error: 'Game already started or finished' };
+    if (room.players.length < 2) return { success: false, error: 'Need at least 2 players to start game' };
+    
+    if (this.activeGames.has(room.code)) {
+      return { success: false, error: 'Game already started in this room' };
+    }
+
+    const codeChallengeResult = await this.codeService.getRandomChallenge();
+    if (!codeChallengeResult.success) return { success: false, error: 'Code challenge not found' };
+    
+    
+    const allReady = room.players.every(p => p.isReady);
+    if (!allReady) return { success: false, error: 'Not all players are ready' };
+
+    const challenge = codeChallengeResult.challenge;
+
+    const game = new Game({
+      roomCode: room.code,
+      codeId: challenge.id,
+      players: room.players.map(player => ({
+        playerId: player.playerId._id || player.playerId,
+        playerCode: "init",
+        totalScore: 0,
+        branchCoverage: 0,
+        lineCoverage: 0,
+        mutation: {
+          score: 0,
+          total: 0,
+          killed: 0,
+          survived: 0,
+          timeout: 0,
+          noCoverage: 0,
+          details: []
+        },
+        badgesEarned: [],
+        testLines: 0,
+        executionTime: 0,
+        feedback: ''
+      })),
+      gameState: 'playing',
+      startedAt: new Date()
+    });
+
+    await game.save();
+
+    // Use your roomService method here
+    const updateResult = await this.roomService.updateRoomGameState(room.code, 'playing', { gameId: game._id, codeId: challenge.id });
+    if (!updateResult.success) return { success: false, error: updateResult.error };
+
+    this.activeGames.set(game._id.toString(), {
+      gameId: game._id,
+      roomCode: room.code,
+      codeId: challenge.id,
+      players: game.players,
+      startedAt: game.startedAt,
+      timeLimit: 300
+    });
+
+    return {
+      success: true,
+      game
+    };
+
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Submit player's test code
+ * @param {string} gameId - Game ID
+ * @param {string} playerId - Player ID
+ * @param {string} testCode - Player's test code
+ * @returns {Object} Submission result
+ */
+async submitTestCode(gameId, playerId, testCode) {
+  try {
+    const game = await Game.findById(gameId);
+    if (!game) {
+      return { success: false, error: "Game not found" };
+    }
+
+    const player = await this.playerService.getPlayer(playerId);
+    if (!player.success) {
+      return { success: false, error: player.error };
+    }
+
+    if (game.gameState !== "playing") {
+      return { success: false, error: "Game is not active" };
+    }
+
+    if (!testCode) {
+      return { success: false, error: "No test code submitted" };
+    }
+
+    // Find player inside game
+    const playerIndex = game.players.findIndex(
+      p => p.playerId.toString() === playerId.toString()
+    );
+
+    if (playerIndex === -1) {
+      return {
+        success: false,
+        error: "Player not part of this game. Please join before submitting code."
+      };
+    }
+
+    console.log (" Menna is happy ")
+    // Calculate duration and update player info
+    game.players[playerIndex].submission.testCode = testCode;
+    game.players[playerIndex].submittedAt = new Date();
+    console.log (" Menna is happy 2 ")
+    game.markModified("players");
+    game.markModified("submission");
     try {
-      const game = await Game.findById(gameId).populate('codeId');
-      if (!game) {
-        return {
-          success: false,
-          error: 'Game not found'
-        };
+    await game.save();
+    } catch (e) {
+      console.error("Error saving game after test code submission:", e);
+    }
+
+    // Update in-memory version if it exists
+    const activeGame = this.activeGames.get(gameId.toString());
+    if (activeGame) {
+    console.log (" Menna is happy 4 ")
+
+      const activePlayerIndex = activeGame.players.findIndex(
+        p => p.playerId.toString() === playerId.toString()
+      );
+      if (activePlayerIndex !== -1) {
+        activeGame.players[activePlayerIndex].submission.testCode = testCode;
+        activeGame.players[activePlayerIndex].submittedAt = new Date();
+      }
+    }
+    console.log (" Menna is happy 3 ")
+
+    return {
+      success: true,
+      message: "Test code submitted successfully",
+      game
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get the player's last test submission for a given game (debug version)
+ * @param {string} gameId - Game ID
+ * @param {string} playerId - Player ID
+ */
+async getLastSubmission(playerId, gameId) {
+  try {
+  
+    // 1️⃣ Fetch player info
+    const playerInfo = await this.playerService.getPlayer(playerId);
+
+    if (!playerInfo.success) {
+      
+      return { success: false, error: playerInfo.error };
+    }
+
+    // 2️⃣ Fetch game
+    const game = await Game.findById(gameId);
+
+    if (!game) {
+
+      return { success: false, error: "Game not found" };
+    }
+
+
+    // 3️⃣ Find player in game
+    const gamePlayer = game.players.find(
+      p => p.playerId.toString() === playerId.toString()
+    );
+
+    if (!gamePlayer) {
+      return { success: false, error: "Player not found in this game" };
+    }
+
+    // 4️⃣ Check submission
+    if (!gamePlayer.submission || !gamePlayer.submission.testCode) {
+      return { success: false, error: "No submission found for this player" };
+    }
+
+    return {
+      success: true,
+      submission: {
+        playerId: gamePlayer.playerId,
+        code: gamePlayer.submission.testCode,
+        submittedAt: gamePlayer.submittedAt,
+      }
+    };
+
+  } catch (error) {
+    console.error("Error in getLastSubmission:", error);
+    return { success: false, error: error.message };
+  }
+}
+ 
+  async getPlayerDataInGame(gameId, playerId) {
+    try {
+      const player = await this.playerService.getPlayer(playerId);
+      if(!player.success){
+        return { success:false ,error: player.error};
       }
 
-      const codeChallenge = game.codeId;
-      const results = [];
-
-      // Calculate scores for each player
-      for (let i = 0; i < game.players.length; i++) {
-        const player = game.players[i];
-        
-        if (!player.playerCode) {
-          // Player didn't submit
-          player.score = 0;
-          player.coverageScore = 0;
-          player.mutationScore = 0;
-          player.redundancyPenalty = 0;
-          player.feedback = 'No test code submitted';
-          continue;
-        }
-
-        // Calculate scores (this would integrate with actual testing tools)
-        const scores = await this.calculatePlayerScores(
-          codeChallenge.baseCode,
-          player.playerCode,
-          codeChallenge.language
-        );
-
-        player.score = scores.totalScore;
-        player.coverageScore = scores.coverageScore;
-        player.mutationScore = scores.mutationScore;
-        player.redundancyPenalty = scores.redundancyPenalty;
-        player.feedback = scores.feedback;
-
-        results.push({
-          playerId: player.playerId,
-          score: player.score,
-          coverageScore: player.coverageScore,
-          mutationScore: player.mutationScore,
-          redundancyPenalty: player.redundancyPenalty,
-          feedback: player.feedback
-        });
+      const game = await Game.findById(gameId);
+      if (!game){
+        return { success:false , error:"Game not found"};
       }
 
-      // Determine winner
-      const winner = game.players.reduce((prev, current) => 
-        (prev.score > current.score) ? prev : current
+      const gamePlayer = game.players.find(
+        p => p.playerId.toString() === playerId.toString()
       );
 
-      // Update game state
-      game.gameState = 'finished';
-      game.finishedAt = new Date();
-      game.winner = winner.playerId;
-      game.totalDuration = Math.floor((game.finishedAt - game.startedAt) / 1000);
-
-      await game.save();
-
-      // Update player statistics
-      await this.updatePlayerStats(game);
-
-      // Remove from active games
-      this.activeGames.delete(gameId.toString());
-
+      if(!gamePlayer)
+      {
+        return { success:false , error:"Player not in this game"}
+      }
       return {
-        success: true,
-        results,
-        winner: {
-          playerId: winner.playerId,
-          score: winner.score
-        },
-        gameDuration: game.totalDuration
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message
-      };
+        success:true,
+        playerDate: gamePlayer
+      }
     }
-  }
+    catch (error){
+      return {
+        success:false,
+        error : error.message
+      }
+    } 
+}
 
-  /**
-   * Calculate individual player scores
-   * @param {string} baseCode - Original code to test
-   * @param {string} testCode - Player's test code
-   * @param {string} language - Programming language
-   * @returns {Object} Calculated scores
-   */
-  async calculatePlayerScores(baseCode, testCode, language) {
-    // This is a simplified scoring system
-    // In a real implementation, you would integrate with testing frameworks
+async calculatePlayerData (gameId, playerId , testCode){
+  try {
+    const player = await this.playerService.getPlayer(playerId);
     
-    try {
-      // Mock scoring calculation
-      const coverageScore = Math.min(100, testCode.length * 2); // Simple coverage based on test length
-      const mutationScore = Math.min(100, testCode.split('assert').length * 10); // Based on assertions
-      const redundancyPenalty = Math.max(0, (testCode.length - 500) * 0.1); // Penalty for overly long tests
-      
-      const totalScore = Math.max(0, coverageScore + mutationScore - redundancyPenalty);
-      
-      let feedback = '';
-      if (coverageScore < 50) {
-        feedback += 'Low test coverage. ';
-      }
-      if (mutationScore < 30) {
-        feedback += 'Need more assertions. ';
-      }
-      if (redundancyPenalty > 0) {
-        feedback += 'Tests are too verbose. ';
-      }
-      if (feedback === '') {
-        feedback = 'Great test coverage and assertions!';
+    if(!player.success){
+        return { success:false ,error: player.error};
       }
 
-      return {
-        totalScore: Math.round(totalScore),
-        coverageScore: Math.round(coverageScore),
-        mutationScore: Math.round(mutationScore),
-        redundancyPenalty: Math.round(redundancyPenalty),
-        feedback: feedback.trim()
+      const game = await Game.findById(gameId).populate('codeId');
+      if (!game){
+        return { success:false , error:"Game not found"};
+      }
+
+      const gamePlayer = game.players.find(
+        p => p.playerId.toString() === playerId.toString()
+      );
+
+      if(!gamePlayer)
+      {
+        return { success:false , error:"Player not in this game"}
+      }   
+
+      const baseCode = game.codeId.baseCode;
+      console.log(" here is basecode ", baseCode); 
+
+      const tempRootDir = path.join(process.cwd(), 'temp');
+      
+      const runCode = await this.codeService.compileAndRunCSharpCode(
+       baseCode, gamePlayer.submission.testCode, playerId,
+       tempRootDir
+      )
+
+      if(!runCode.success){
+        return { success:false ,error: runCode.error};
+      }
+
+      const executionTime = runCode.executionTime ;
+      const testStats = runCode.stats ;
+      console.log("runCode object:\n" + JSON.stringify(runCode, null, 2));
+      const playerTestDir = runCode.playerTestsDir ;
+      console.log(" playerTestDir ", playerTestDir);
+      let coverageReport;
+try {
+  console.log("Starting coverage report...");
+  coverageReport = await this.codeService.generateCoverageReport(playerTestDir);
+  console.log("Finished coverage report");
+} catch(e) {
+  console.error("Coverage report error:", e);
+}
+
+      console.log("coverage object:\n" + JSON.stringify(coverageReport, null, 2));
+
+      if(!coverageReport.success){
+
+        return { success:false ,error: coverageReport.error};
+
+      }
+      console.log("done with coverage report ");
+
+
+      const lineCoverage = coverageReport.lineCoverage;
+      const coverageSummary = coverageReport.coverageSummary;
+      const lineRate = coverageReport.lineRate;
+      const branchRate = coverageReport.branchRate;
+
+      const calculateTestLines = await this.codeService.calculateTestLines(baseCode);
+      if(!calculateTestLines.success){
+        return { success:false ,error: calculateTestLines.error};
+      }
+
+      const testLines = calculateTestLines.totalTestLines ;
+      console.log("done with test lines ");
+      let generateMutationReport;
+  try {
+          console.log("Finished Mutation report");
+       generateMutationReport = await this.codeService.generateMutationReport(
+        playerTestDir, tempRootDir
+      )
+      console.log("Finished Mutation report");
+} catch(e) {
+  console.error("Mutation error:", e);
+}
+    
+      if(!generateMutationReport.success){
+        return { success:false ,error: generateMutationReport.error};
+      }
+
+       console.log("done with mutation  ");
+      const mutants = generateMutationReport.mutants ;
+      const mutantionSummary = generateMutationReport.summary;
+      
+      gamePlayer.submission.testCode = testCode;
+      gamePlayer.submission.stats = testStats;
+      gamePlayer.submission.submittedAt = new Date();
+      console.log("hey 1");
+      gamePlayer.totalScore =
+      (mutantionSummary.mutationScore * 0.4) +
+      (branchRate * 0.2 )+
+      (coverageSummary * 0.2) +
+      (testLines *0.1)
+      - (executionTime *0.1);
+      
+
+      gamePlayer.lineCoverage = lineCoverage;
+      gamePlayer.lineRate = lineRate;
+      gamePlayer.branchCoverage = branchRate;
+      gamePlayer.coverageSummary = coverageSummary;
+      gamePlayer.mutation = {
+        score: mutantionSummary.mutationScore,
+        total: mutantionSummary.totalMutants,
+        killed: mutantionSummary.killed,
+        survived: mutantionSummary.survived,
+        timeout: mutantionSummary.timeout,
+        noCoverage: mutantionSummary.noCoverage,
+        details: mutants
       };
-    } catch (error) {
+      gamePlayer.testLines = testLines;
+      gamePlayer.executionTime = executionTime;
+
+      game.markModified("players");
+      game.markModified("submission");
+      game.markModified("mutation");
+      game.markModified("lineCoverage");
+      await game.save();
+       console.log("hey 2");
       return {
-        totalScore: 0,
-        coverageScore: 0,
-        mutationScore: 0,
-        redundancyPenalty: 0,
-        feedback: 'Error in test execution'
-      };
-    }
-  }
+      success: true,
+      playerData: {
+        stats: testStats,
+        coverageSummary: coverageSummary,
+        lineRate: lineRate,
+        branchCoverage: branchRate,
+        mutation: {
+          score: mutantionSummary.mutationScore,
+          total: mutantionSummary.totalMutants,
+          killed: mutantionSummary.killed,
+          survived: mutantionSummary.survived,
+          timeout: mutantionSummary.timeout,
+          noCoverage: mutantionSummary.noCoverage
+        },
+        testLines: testLines,
+        totalScore: gamePlayer.totalScore,
+        executionTime: executionTime,
+        lineCoverage: lineCoverage  // ✅ EXPLICITLY INCLUDE THIS
+      }
+    };
+  } catch (error){
+     console.log(error);
+      return {
+        success:false,
+        error : error.message
+      }
+    } 
+}
+
 
   /**
    * Update player statistics after game completion
@@ -444,65 +538,6 @@ class GameService {
     } catch (error) {
       console.error('Error checking badges:', error);
     }
-  }
-
-  /**
-   * Get game results
-   * @param {string} gameId - Game ID
-   * @returns {Object} Game results
-   */
-  async getGameResults(gameId) {
-    try {
-      const game = await Game.findById(gameId)
-        .populate('players.playerId', 'name email')
-        .populate('codeId', 'title description language')
-        .populate('winner', 'name');
-
-      if (!game) {
-        return {
-          success: false,
-          error: 'Game not found'
-        };
-      }
-
-      return {
-        success: true,
-        game: {
-          id: game._id,
-          roomCode: game.roomCode,
-          codeChallenge: game.codeId,
-          players: game.players.map(p => ({
-            playerId: p.playerId._id,
-            name: p.playerId.name,
-            score: p.score,
-            coverageScore: p.coverageScore,
-            mutationScore: p.mutationScore,
-            redundancyPenalty: p.redundancyPenalty,
-            feedback: p.feedback,
-            gameDuration: p.gameDuration,
-            submittedAt: p.submittedAt
-          })),
-          winner: game.winner,
-          gameState: game.gameState,
-          startedAt: game.startedAt,
-          finishedAt: game.finishedAt,
-          totalDuration: game.totalDuration
-        }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
-  /**
-   * Get active games
-   * @returns {Array} List of active games
-   */
-  getActiveGames() {
-    return Array.from(this.activeGames.values());
   }
 
   /**
