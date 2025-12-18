@@ -9,4 +9,6 @@ router.post('/verify-registration', authController.verifyRegistration.bind(authC
 router.post('/login', authController.login.bind(authController));
 router.get('/profile', authMiddleware, authController.getProfile.bind(authController));
 router.post('/logout', authMiddleware, authController.logout.bind(authController));
+
+router.get('/getPlayer/:playerId', authMiddleware, authController.getPlayer.bind(authController));
 module.exports = router;

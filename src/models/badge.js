@@ -13,10 +13,6 @@ const badgeSchema = new mongoose.Schema({
     type: String,
     required: false
   },
-  icon: {
-    type: String,
-    default: '🏆'
-  }
 });
 
 module.exports = mongoose.model('Badge', badgeSchema);

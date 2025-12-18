@@ -8,5 +8,6 @@ router.post("/submitTestCode",gameController.submitTestCode);
 router.get("/:gameId",gameController.getGame);
 router.get("/:playerId/:gameId/lastSubmission",gameController.getLastSubmission);
 router.post("/calculate-player-data", gameController.calculatePlayerData);
-
+router.post('/end/:gameId', gameController.endGame);
+router.get('/results/:gameId', gameController.getGameResults);
 module.exports = router;

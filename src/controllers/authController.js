@@ -82,6 +82,23 @@ class AuthController {
       return res.status(500).json({ error: err.message });
     } 
   }
+    /**
+   * Get player information
+   * @param {string} playerId - Socket ID of the player
+   * @returns {Object} Player data or error
+   */
+  async getPlayer(req, res) {
+    try {
+      const playerId = req.params.playerId;
+      const player = await this.playerService.getPlayer(playerId);
+      return res.status(200).json(player);
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
 }
 
 module.exports = new AuthController();

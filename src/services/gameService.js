@@ -1,6 +1,8 @@
 const Game = require('../models/game');
 const Player = require('../models/player');
 const Achievement = require('../models/achievement');
+
+
 const Badge = require('../models/badge');
 const CodeService = require('./codeService');
 const RoomService = require('./roomService');
@@ -236,29 +238,22 @@ async getLastSubmission(playerId, gameId) {
   }
 }
  
-  async getPlayerDataInGame(gameId, playerId) {
+  async getGameResults(gameId) {
     try {
-      const player = await this.playerService.getPlayer(playerId);
-      if(!player.success){
-        return { success:false ,error: player.error};
-      }
-
       const game = await Game.findById(gameId);
       if (!game){
         return { success:false , error:"Game not found"};
       }
 
-      const gamePlayer = game.players.find(
-        p => p.playerId.toString() === playerId.toString()
-      );
+      const gameResults = game.players ;
 
-      if(!gamePlayer)
+      if(!gameResults)
       {
-        return { success:false , error:"Player not in this game"}
+        return { success:false , error:"No result"}
       }
       return {
         success:true,
-        playerDate: gamePlayer
+        playerDate: gameResults
       }
     }
     catch (error){
@@ -363,7 +358,7 @@ try {
       gamePlayer.submission.testCode = testCode;
       gamePlayer.submission.stats = testStats;
       gamePlayer.submission.submittedAt = new Date();
-      console.log("hey 1");
+
       gamePlayer.totalScore =
       (mutantionSummary.mutationScore * 0.4) +
       (branchRate * 0.2 )+
@@ -371,7 +366,8 @@ try {
       (testLines *0.1)
       - (executionTime *0.1);
       
-
+      console.log(" mutants " + JSON.stringify(mutants) );
+      
       gamePlayer.lineCoverage = lineCoverage;
       gamePlayer.lineRate = lineRate;
       gamePlayer.branchCoverage = branchRate;
@@ -407,7 +403,8 @@ try {
           killed: mutantionSummary.killed,
           survived: mutantionSummary.survived,
           timeout: mutantionSummary.timeout,
-          noCoverage: mutantionSummary.noCoverage
+          noCoverage: mutantionSummary.noCoverage,
+          details: mutants
         },
         testLines: testLines,
         totalScore: gamePlayer.totalScore,
@@ -462,6 +459,8 @@ try {
       console.error('Error updating player stats:', error);
     }
   }
+
+
 
   /**
    * Check and award achievements
@@ -541,42 +540,198 @@ try {
   }
 
   /**
-   * End a game early
+   * End a game and finalize all player data
    * @param {string} gameId - Game ID
    * @returns {Object} End game result
    */
   async endGame(gameId) {
     try {
-      const game = await Game.findById(gameId);
+      const game = await Game.findById(gameId).populate('codeId');
       if (!game) {
-        return {
-          success: false,
-          error: 'Game not found'
-        };
+        return { success: false, error: 'Game not found' };
       }
 
       if (game.gameState === 'finished') {
-        return {
-          success: false,
-          error: 'Game already finished'
-        };
+        return { success: true, error: 'Game already finished' };
       }
 
-      // Calculate scores for submitted players
-      await this.calculateScores(gameId);
+      // ✅ 1️⃣ Calculate game duration
+      const gameDuration = Math.round((Date.now() - game.startedAt) / 1000);
+      game.totalDuration = gameDuration;
 
-      // Remove from active games
+      // ✅ 2️⃣ Calculate scores and rankings
+      const playerScores = game.players.map((player, index) => ({
+        index,
+        playerId: player.playerId,
+        totalScore: player.totalScore || 0,
+        mutationScore: player.mutation?.score || 0,
+        lineRate: player.lineRate || 0,
+        executionTime: player.executionTime || 0,
+        testLines: player.testLines || 0
+      }));
+
+      // Sort by totalScore descending
+      playerScores.sort((a, b) => b.totalScore - a.totalScore);
+
+      // // ✅ 3️⃣ Determine winner (highest score)
+      // const winner = playerScores[0];
+      // game.winner = winner.playerId;
+
+      // ✅ 4️⃣ Award badges to each player
+      for (let i = 0; i < game.players.length; i++) {
+        const gamePlayer = game.players[i];
+        const badges = [];
+
+        // 🎖️ Mutation Slayer: Kill ≥ 80% of mutants
+        if (gamePlayer.mutation?.score >= 80) {
+          const mutationSlayerBadge = await Badge.findOne({ condition: 'mutation_slayer' });
+          if (mutationSlayerBadge && !gamePlayer.badgesEarned.includes(mutationSlayerBadge._id)) {
+            badges.push(mutationSlayerBadge._id);
+            gamePlayer.feedback = (gamePlayer.feedback || '') + '\n🎖️ Mutation Slayer: Killed ≥80% of mutants!';
+          }
+        }
+
+        // 🎖️ Coverage Explorer: Tiered badges
+        const lineRate = gamePlayer.lineRate || 0;
+        if (lineRate === 100) {
+          const platinumBadge = await Badge.findOne({ condition: 'coverage_platinum' });
+          if (platinumBadge && !gamePlayer.badgesEarned.includes(platinumBadge._id)) {
+            badges.push(platinumBadge._id);
+            gamePlayer.feedback = (gamePlayer.feedback || '') + '\n⭐ Coverage Platinum: 100% code coverage!';
+          }
+        } else if (lineRate >= 90) {
+          const goldBadge = await Badge.findOne({ condition: 'coverage_gold' });
+          if (goldBadge && !gamePlayer.badgesEarned.includes(goldBadge._id)) {
+            badges.push(goldBadge._id);
+            gamePlayer.feedback = (gamePlayer.feedback || '') + '\n🥇 Coverage Gold: ≥90% code coverage!';
+          }
+        } else if (lineRate >= 80) {
+          const silverBadge = await Badge.findOne({ condition: 'coverage_silver' });
+          if (silverBadge && !gamePlayer.badgesEarned.includes(silverBadge._id)) {
+            badges.push(silverBadge._id);
+            gamePlayer.feedback = (gamePlayer.feedback || '') + '\n🥈 Coverage Silver: ≥80% code coverage!';
+          }
+        } else if (lineRate >= 70) {
+          const bronzeBadge = await Badge.findOne({ condition: 'coverage_bronze' });
+          if (bronzeBadge && !gamePlayer.badgesEarned.includes(bronzeBadge._id)) {
+            badges.push(bronzeBadge._id);
+            gamePlayer.feedback = (gamePlayer.feedback || '') + '\n🥉 Coverage Bronze: ≥70% code coverage!';
+          }
+        }
+
+        // 🎖️ Lightning Tester: Fast execution time (< 5 seconds)
+        if (gamePlayer.executionTime > 0 && gamePlayer.executionTime < 5) {
+          const lightningBadge = await Badge.findOne({ condition: 'lightning_tester' });
+          if (lightningBadge && !gamePlayer.badgesEarned.includes(lightningBadge._id)) {
+            badges.push(lightningBadge._id);
+            gamePlayer.feedback = (gamePlayer.feedback || '') + '\n⚡ Lightning Tester: Executed in < 5 seconds!';
+          }
+        }
+
+        // 🎖️ First Place / Ranker badges
+        const ranking = playerScores.findIndex(p => p.playerId.toString() === gamePlayer.playerId.toString()) + 1;
+        if (ranking === 1) {
+          const firstPlaceBadge = await Badge.findOne({ condition: 'first_place' });
+          if (firstPlaceBadge && !gamePlayer.badgesEarned.includes(firstPlaceBadge._id)) {
+            badges.push(firstPlaceBadge._id);
+            gamePlayer.feedback = (gamePlayer.feedback || '') + '\n🏆 First Place: Highest score in this game!';
+          }
+        } else if (ranking === 2) {
+          const secondPlaceBadge = await Badge.findOne({ condition: 'second_place' });
+          if (secondPlaceBadge && !gamePlayer.badgesEarned.includes(secondPlaceBadge._id)) {
+            badges.push(secondPlaceBadge._id);
+            gamePlayer.feedback = (gamePlayer.feedback || '') + '\n🥈 Second Place: Great effort!';
+          }
+        }
+
+        // Add new badges
+        gamePlayer.badgesEarned.push(...badges);
+      }
+
+      // ✅ 5️⃣ Update game state
+      game.gameState = 'finished';
+      game.markModified('players');
+      game.markModified('winner');
+      await game.save();
+
+      // ✅ 6️⃣ Delete the game room
+      const roomDeleteResult = await this.roomService.deleteRoom(game.roomCode);
+      if (!roomDeleteResult.success) {
+        console.warn('⚠️ Warning: Could not delete room:', roomDeleteResult.error);
+      } else {
+        console.log('✅ Room deleted:', game.roomCode);
+      }
+
+      // ✅ 7️⃣ Update Player objects with final stats
+      for (const gamePlayer of game.players) {
+        const player = await Player.findById(gamePlayer.playerId);
+        if (!player) continue;
+
+        // Update game statistics
+        player.totalGamesPlayed = (player.totalGamesPlayed || 0) + 1;
+        player.totalScore = (player.totalScore || 0) + gamePlayer.totalScore;
+        
+        // Check if player won
+        if (gamePlayer.playerId.toString() === game.winner.toString()) {
+          player.totalGamesWon = (player.totalGamesWon || 0) + 1;
+          player.currentStreak = (player.currentStreak || 0) + 1;
+          player.bestStreak = Math.max(player.bestStreak || 0, player.currentStreak);
+        } else {
+          player.currentStreak = 0;
+        }
+
+        // Calculate averages
+        player.averageScore = Math.round(player.totalScore / player.totalGamesPlayed);
+        player.bestScore = Math.max(player.bestScore || 0, gamePlayer.totalScore);
+        player.winRate = Math.round((player.totalGamesWon / player.totalGamesPlayed) * 100);
+
+        // Add earned badges
+        if (gamePlayer.badgesEarned && gamePlayer.badgesEarned.length > 0) {
+          gamePlayer.badgesEarned.forEach(badgeId => {
+            if (!player.badges.includes(badgeId)) {
+              player.badges.push(badgeId);
+            }
+          });
+        }
+
+        player.lastActive = new Date();
+
+        await player.save();
+        console.log(`✅ Updated player stats: ${player._id}`);
+      }
+
+      // ✅ 8️⃣ Remove from active games
       this.activeGames.delete(gameId.toString());
 
+      // ✅ Return final game data
       return {
         success: true,
-        message: 'Game ended successfully'
+        message: 'Game ended successfully',
+        game: {
+          gameId: game._id,
+          winner: game.winner,
+          gameDuration: gameDuration,
+          players: game.players.map(p => ({
+            playerId: p.playerId,
+            totalScore: p.totalScore,
+            badgesEarned: p.badgesEarned,
+            feedback: p.feedback,
+            mutation: p.mutation,
+            lineCoverage: p.lineCoverage,
+            lineRate: p.lineRate,
+            executionTime: p.executionTime
+          }))
+        }
       };
+
     } catch (error) {
+      console.error('❌ Error ending game:', error);
       return {
         success: false,
         error: error.message
       };
+
+
     }
   }
 }

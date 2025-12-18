@@ -521,12 +521,14 @@ const playerTestsProj = path.join(playerTestsDir, "PlayerTests.csproj");
 console.log("playerCodeProj:", playerCodeProj);
 console.log("playerTestsProj:", playerTestsProj);
 
+// always recreate solution
+if (fs.existsSync(solutionPath)) {
+  fs.unlinkSync(solutionPath);
+}
 
-    if (!fs.existsSync(solutionPath)) {
-      execSync(`dotnet new sln -n TempSolution`, { cwd: projectDir });
-      execSync(`dotnet sln "${solutionPath}" add "${playerCodeProj}"`, { cwd: projectDir });
-      execSync(`dotnet sln "${solutionPath}" add "${playerTestsProj}"`, { cwd: projectDir });
-    }
+execSync(`dotnet new sln -n TempSolution`, { cwd: projectDir });
+execSync(`dotnet sln "${solutionPath}" add "${playerCodeProj}"`, { cwd: projectDir });
+execSync(`dotnet sln "${solutionPath}" add "${playerTestsProj}"`, { cwd: projectDir });
 
     // 3️⃣ Run Stryker
     const strykerCmd = `dotnet stryker --solution "${solutionPath}" --test-project "${playerTestsProj}" --reporter json --output "${projectDir}/StrykerOutput"`;

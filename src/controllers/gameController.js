@@ -89,6 +89,46 @@ calculatePlayerData = async (req, res) => {
 }
 
 
+getGameResults = async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    if (!gameId) {
+      return res.status(400).json({ success: false, error: 'Missing gameId' });
+    }
+    const result = await gameService.getGameResults(gameId);
+    res.json(result);
+
+  } catch (err) {
+    console.error("Error in getGameResults:", err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+
+
+
+  endGame =async (req, res) => {
+    const { gameId } = req.params;
+
+    if (!gameId) {
+      return res.status(400).json({ success: false, error: 'gameId is required' });
+    }
+
+    try {
+      const result = await gameService.endGame(gameId);
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      return res.json(result);
+    } catch (error) {
+      console.error('❌ Error in controller:', error);
+      return res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+  }
+
+
 }
 
 module.exports = GameController;

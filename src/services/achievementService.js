@@ -142,6 +142,8 @@ class AchievementService {
         };
       }
 
+      
+
       // Check if achievement with same type already exists
       const existingAchievement = await Achievement.findOne({ type });
       if (existingAchievement) {

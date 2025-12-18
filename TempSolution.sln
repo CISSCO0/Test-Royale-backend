@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "temp", "temp", "{EFAC71D2-676E-4317-AE55-3717CC76301F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "player_692446a022ce941a3f0cc933_1764065304158", "player_692446a022ce941a3f0cc933_1764065304158", "{8536DD4F-E7E8-45AC-99DB-15E780654464}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlayerCode", "temp\player_692446a022ce941a3f0cc933_1764065304158\PlayerCode\PlayerCode.csproj", "{AAA9BEBE-312D-4E5E-9593-DE0E10BD1966}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlayerTests", "temp\player_692446a022ce941a3f0cc933_1764065304158\PlayerTests\PlayerTests.csproj", "{1CBA5989-C683-423A-BDAE-CC405481B186}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AAA9BEBE-312D-4E5E-9593-DE0E10BD1966}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AAA9BEBE-312D-4E5E-9593-DE0E10BD1966}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AAA9BEBE-312D-4E5E-9593-DE0E10BD1966}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AAA9BEBE-312D-4E5E-9593-DE0E10BD1966}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CBA5989-C683-423A-BDAE-CC405481B186}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CBA5989-C683-423A-BDAE-CC405481B186}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CBA5989-C683-423A-BDAE-CC405481B186}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CBA5989-C683-423A-BDAE-CC405481B186}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8536DD4F-E7E8-45AC-99DB-15E780654464} = {EFAC71D2-676E-4317-AE55-3717CC76301F}
+		{AAA9BEBE-312D-4E5E-9593-DE0E10BD1966} = {8536DD4F-E7E8-45AC-99DB-15E780654464}
+		{1CBA5989-C683-423A-BDAE-CC405481B186} = {8536DD4F-E7E8-45AC-99DB-15E780654464}
+	EndGlobalSection
+EndGlobal

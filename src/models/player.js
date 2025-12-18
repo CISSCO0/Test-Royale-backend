@@ -11,11 +11,12 @@ const playerSchema = new mongoose.Schema({
   totalGamesWon:{ type: Number, default: 0 },
   winRate: { type: Number, default: 0 } ,
   averageScore:{ type: Number, default: 0 },
-  bestStreak:{ type: Number, default: 0 },
+  
   bestScore:{ type: Number, default: 0 },
-  currentStreak:{ type: Number, default: 0 },
+  badges: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Badge' }
+
+  ],
   achievements: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Achievement' }],
-  badges: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Badge' }],
   joinedAt: { type: Date, default: Date.now },
   lastActive: { type: Date, default: Date.now }
 }, { timestamps: true });

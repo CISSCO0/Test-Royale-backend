@@ -22,21 +22,7 @@ class PlayerController {
     }
   }
 
-  /**
-   * Get player information
-   * @param {string} playerId - Socket ID of the player
-   * @returns {Object} Player data or error
-   */
-  getPlayer(playerId) {
-    try {
-      return this.playerService.getPlayer(playerId);
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
+
 
   /**
    * Join a room as a player
