@@ -28,10 +28,11 @@ const config = {
   // Socket.io configuration
   socket: {
     cors: {
-      origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : [
+      origin: [
         'http://localhost:3000',
         'https://test-royale-36skzytqz-cissco0s-projects.vercel.app',
-        /^https:\/\/test-royale-.*\.vercel\.app$/
+        /^https:\/\/test-royale-.*\.vercel\.app$/,
+        ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(url => url.trim()) : [])
       ],
       methods: ['GET', 'POST'],
       credentials: true
