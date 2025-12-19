@@ -25,9 +25,10 @@ app.use(express.json());
 
 // Backend CORS configuration
 app.use(cors({
-  origin: [
+  origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : [
     'http://localhost:3000',
-    'https://your-frontend.vercel.app'
+    'https://test-royale-36skzytqz-cissco0s-projects.vercel.app',
+    /^https:\/\/test-royale-.*\.vercel\.app$/
   ],
   credentials: true
 }));
