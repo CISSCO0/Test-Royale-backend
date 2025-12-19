@@ -5,7 +5,6 @@ const cors = require('cors');
 const { config, validateConfig } = require('./src/config/env');
 const createApp = require('./src/app');
 const connectDB = require('./src/config/db');
-
 console.log("BOOT OK");
 
 // Validate configuration
@@ -26,7 +25,10 @@ app.use(express.json());
 
 // Backend CORS configuration
 app.use(cors({
-  origin:'http://localhost:3000',
+  origin: [
+    'http://localhost:3000',
+    'https://your-frontend.vercel.app'
+  ],
   credentials: true
 }));
 
