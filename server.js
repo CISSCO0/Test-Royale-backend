@@ -6,6 +6,8 @@ const { config, validateConfig } = require('./src/config/env');
 const createApp = require('./src/app');
 const connectDB = require('./src/config/db');
 
+console.log("BOOT OK");
+
 // Validate configuration
 try {
   validateConfig();
@@ -13,6 +15,7 @@ try {
   console.error('Configuration validation failed:', error.message);
   process.exit(1);
 }
+
 
 // Create HTTP server
 const server = http.createServer();
@@ -23,7 +26,7 @@ app.use(express.json());
 
 // Backend CORS configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin:'http://localhost:3000',
   credentials: true
 }));
 
