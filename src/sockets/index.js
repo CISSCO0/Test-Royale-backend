@@ -9,6 +9,7 @@ const GameService = require('../services/gameService');
 const cookie = require('cookie');
 const AuthService = require('../services/authService');
 const authService = new AuthService();
+const { config } = require('../config/env');
 
 /**
  * Initialize Socket.io
@@ -17,11 +18,7 @@ const authService = new AuthService();
  */
 function initializeSocketIO(server) {
   const io = new Server(server, {
-    cors: {
-      origin: process.env.CLIENT_URL || "http://localhost:3000",
-      methods: ["GET", "POST"],
-      credentials: true
-    },
+    cors: config.socket.cors,
     transports: ['websocket', 'polling']
   });
   
