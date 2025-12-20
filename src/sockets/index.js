@@ -24,17 +24,33 @@ function initializeSocketIO(server) {
     transports: ['websocket', 'polling']
   });
   
-  // Socket.IO middleware to authenticate via cookie
+  // Socket.IO middleware to authenticate via cookie or auth token
   io.use((socket, next) => {
     try {
-      const cookies = socket.handshake.headers.cookie;
-      if (!cookies) return next(new Error('Authentication error: no cookies'));
-      const parsed = cookie.parse(cookies);
-      const token = parsed['auth_token'];
-      if (!token) return next(new Error('Authentication error: no token'));
+      let token = null;
+      
+      // Try to get token from auth (sent by socket.io client)
+      if (socket.handshake.auth && socket.handshake.auth.token) {
+        token = socket.handshake.auth.token;
+      }
+      
+      // Fallback to cookies if no auth token
+      if (!token) {
+        const cookies = socket.handshake.headers.cookie;
+        if (cookies) {
+          const parsed = cookie.parse(cookies);
+          token = parsed['auth_token'];
+        }
+      }
+      
+      if (!token) {
+        return next(new Error('Authentication error: no token provided'));
+      }
 
       const verified = authService.verifyToken(token);
-      if (!verified.success) return next(new Error('Invalid token'));
+      if (!verified.success) {
+        return next(new Error('Invalid token'));
+      }
 
       socket.playerId = verified.playerId; // attach playerId to socket
       next();
