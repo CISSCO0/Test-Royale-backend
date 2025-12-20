@@ -36,7 +36,7 @@ class GameController {
 submitTestCode = async (req, res) => {
   try {
   const { gameId, playerId, testCode } = req.body;
-  console.log(" test code received in controller:", testCode);
+
   if (!gameId || !playerId || !testCode) {
     return res.status(400).json({ success: false, error: 'Missing fields' });
   }
@@ -79,7 +79,7 @@ calculatePlayerData = async (req, res) => {
     }
   
     const result = await gameService.calculatePlayerData(gameId, playerId);
-    console.log( "results  finale" + JSON.stringify(result) )
+
     res.json(result);
 
   } catch (err) {

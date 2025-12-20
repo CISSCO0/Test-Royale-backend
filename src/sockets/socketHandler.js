@@ -25,7 +25,7 @@ const socketHandler = (io, socket, roomService, gameService ) => {
         });
         
         // Log room creation
-        console.log(`Room created: ${result.room.code} by ${socket.playerId}`);
+
         
 
       } else {
@@ -53,7 +53,7 @@ const socketHandler = (io, socket, roomService, gameService ) => {
       if (result.success) {
         const roomCode = result.room.code;
         socket.join(roomCode);
-        console.log(`✅ Socket ${socket.id} joined room channel: ${roomCode}`);
+
       }
       
       callback(result);
@@ -93,7 +93,7 @@ const socketHandler = (io, socket, roomService, gameService ) => {
         // ✅ Join the socket to the room FIRST
         socket.join(roomCode);
         socket.roomCode = roomCode;
-        console.log(`✅ Player ${socket.playerId} joined room ${roomCode}`);
+
 
         // ✅ Broadcast to ALL players in the room (including the new player)
         io.to(roomCode).emit('player_joined', {
@@ -128,7 +128,7 @@ const socketHandler = (io, socket, roomService, gameService ) => {
 
       const { isReady } = data;
       const result = await roomService.setPlayerReady(socket.playerId, isReady);
-      console.log( "hey i am here ",result.room.players )
+
       if (result.success) {
         // Notify all players in the room
         const roomCode = result.room.code;
@@ -147,7 +147,7 @@ const socketHandler = (io, socket, roomService, gameService ) => {
         });
         
         // Log ready status change
-        console.log(`Player ${socket.playerId} is ${isReady ? 'ready' : 'not ready'}`);
+
       } else {
         callback({
           success: false,
@@ -170,7 +170,7 @@ const socketHandler = (io, socket, roomService, gameService ) => {
   socket.on('start_game', async (data, callback) => {
     try {
       const result = await gameService.startGame(socket.playerId);
-      console.log("result from start game ", result);
+
 
       if (result.success) {
         const roomCode = result.game.roomCode;
@@ -189,7 +189,7 @@ const socketHandler = (io, socket, roomService, gameService ) => {
           game: result.game
         });
         
-        console.log(`✅ Game started in room ${roomCode} with gameId: ${result.game.id}`);
+
       } else {
         callback?.({
           success: false,
@@ -213,7 +213,7 @@ const socketHandler = (io, socket, roomService, gameService ) => {
        
       if (result.success) {
         const roomCode = result.room.code;
-        console.log(`👤 Player ${socket.playerId} left room ${roomCode}`);
+
 
         // ✅ Broadcast to ALL remaining players BEFORE the player leaves the socket room
         io.to(roomCode).emit('player_left', {
@@ -273,7 +273,7 @@ const socketHandler = (io, socket, roomService, gameService ) => {
         });
         
         // Log game end
-        console.log(`Game ended in room: ${roomCode}`);
+
       } else {
         callback({
           success: false,
@@ -416,7 +416,7 @@ const socketHandler = (io, socket, roomService, gameService ) => {
         });
       }
       
-      console.log(`Player ${socket.id} disconnected`);
+
     } catch (error) {
       console.error('Error handling disconnection:', error);
     }

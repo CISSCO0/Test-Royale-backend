@@ -66,7 +66,7 @@ function initializeSocketIO(server) {
   const gameService = new GameService();
   // Handle connection
   io.on('connection', (socket) => {
-    console.log(`Client connected: ${socket.id}`);
+
     
     // Initialize room handler for this socket
     socketHandler(io, socket, roomService, gameService);
@@ -81,30 +81,26 @@ function initializeSocketIO(server) {
 
   // Handle disconnection
   io.on('disconnect', (socket) => {
-    console.log(`Client disconnected: ${socket.id}`);
+
   });
 
   // Periodic cleanup of empty rooms
   setInterval(() => {
     const cleaned = roomService.cleanupEmptyRooms();
     if (cleaned > 0) {
-      console.log(`Cleaned up ${cleaned} empty rooms`);
+
     }
   }, 300000); // Every 5 minutes
 
   // Graceful shutdown
   process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down gracefully');
     io.close(() => {
-      console.log('Socket.io server closed');
       process.exit(0);
     });
   });
 
   process.on('SIGINT', () => {
-    console.log('SIGINT received, shutting down gracefully');
     io.close(() => {
-      console.log('Socket.io server closed');
       process.exit(0);
     });
   });

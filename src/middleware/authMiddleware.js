@@ -23,7 +23,7 @@ const authMiddleware = async (req, res, next) => {
 
     const verified = authService.verifyToken(token);
     if (!verified.success) {
-      console.log("Token verification failed:", token);
+
       return res.status(401).json({ 
         success: false, 
         error: 'Invalid token' 

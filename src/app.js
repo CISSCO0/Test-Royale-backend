@@ -36,7 +36,7 @@ function createApp(server = null) {
   // CORS debugging middleware
   app.use((req, res, next) => {
     if (config.logging.enableConsole) {
-      console.log(`[CORS] ${req.method} ${req.path} - Origin: ${req.headers.origin || 'none'}`);
+
     }
     next();
   });
@@ -44,7 +44,7 @@ function createApp(server = null) {
   // Request logging middleware
   app.use((req, res, next) => {
     if (config.logging.enableConsole) {
-      console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - ${req.ip}`);
+
     }
     next();
   });

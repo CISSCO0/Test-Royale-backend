@@ -27,7 +27,7 @@ class CodeService {
     // 2️⃣ Create a unique project folder for this request
     projectDir = path.join(tempRootDir, `player_${playerId}_${Date.now()}`);
     fs.mkdirSync(projectDir, { recursive: true });
-    console.log("Temporary project directory:", projectDir);
+
 
     // 3️⃣ Copy template (PlayerCode + PlayerTests folders)
     fs.cpSync(templateDir, projectDir, { recursive: true });
@@ -35,12 +35,12 @@ class CodeService {
     // 4️⃣ Write BaseCode.cs to PlayerCode project
     const baseCodePath = path.join(projectDir, "PlayerCode", "BaseCode.cs");
     fs.writeFileSync(baseCodePath, code);
-    console.log("BaseCode.cs written to PlayerCode project");
+
 
     // 5️⃣ Write PlayerTests.cs to PlayerTests project
     const testPath = path.join(projectDir, "PlayerTests", "PlayerTests.cs");
     fs.writeFileSync(testPath, tests);
-    console.log(" PlayerTests.cs written to PlayerTests project");
+
     
     // 6️⃣ Define directories
     const playerTestsDir = path.join(projectDir, "PlayerTests");
@@ -62,7 +62,7 @@ class CodeService {
     }
       
     const timeNow1 = Date.now();
-    console.log(`🕒 Time after setup: ${(timeNow1 - totalTime) / 1000}s`);
+
 
     // 8️⃣ Build the PlayerCode library
     
@@ -102,7 +102,7 @@ class CodeService {
     }
 
     // 9️⃣ Run tests - UPDATED with TRX logger to capture Console.WriteLine
-    console.log("🧪 Running tests...");
+
     const runCmd = `dotnet test "${playerTestsDir}" --no-build --logger trx`;
     const startTime = Date.now();
 
@@ -116,7 +116,7 @@ class CodeService {
         const endTime = Date.now();
         const executionTime = (endTime - startTime) / 1000;
 
-        console.log(`⏱️ Execution time: ${executionTime}s`);
+
 
         // ✅ Extract pass/fail counts from stdout
         const output = stdout?.trim() || "";
@@ -130,7 +130,7 @@ class CodeService {
         const failed = failMatch ? parseInt(failMatch[1]) : 0;
         const total = totalMatch ? parseInt(totalMatch[1]) : 0;
         
-        console.log(`📊 Test Results: Passed=${passed}, Failed=${failed}, Total=${total}`);
+
 
         // ✅ NEW: Read TRX file to get Console.WriteLine output
         let consoleOutput = '';
@@ -151,7 +151,7 @@ class CodeService {
                   .filter(text => text.length > 0)
                   .join('\n');
                 
-                console.log("✅ Console output extracted from TRX file");
+
               }
             }
           } catch (err) {
@@ -161,8 +161,7 @@ class CodeService {
 
         // ✅ Clean output - keep test results, add console output
         const cleanedOutput = this._parseTestOutput(output, errorOutput, consoleOutput);
-        console.log("🔍 Raw stdout:", output.slice(0, 1000));
-        console.log("✅ Cleaned output:", cleanedOutput.slice(0, 1000));
+
 
         const results = {
           success: failed === 0,
@@ -320,7 +319,7 @@ _parseTestOutput(stdout, stderr, consoleOutput = '') {
  */
 async generateCoverageReport(playerTestsDir) {
   try {
-    console.log("🧩 [Coverage] Starting coverage report generation...");
+
 
     // ✅ Validate playerTestsDir exists
     if (!fs.existsSync(playerTestsDir)) {
@@ -344,13 +343,13 @@ async generateCoverageReport(playerTestsDir) {
     }));
 
     const testResultsDir = path.join(playerTestsDir, "TestResults");
-    console.log("📁 TestResults directory:", testResultsDir);
+
 
     // ✅ Run coverage collection
     const runCmd = `dotnet test "${playerTestsDir}" --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test_results.trx" --no-build`;
     try {
       execSync(runCmd, { cwd: playerTestsDir, stdio: "pipe", timeout: 20000 });
-      console.log("✅ Coverage collection completed");
+
     } catch (err) {
       console.warn("⚠️ Coverage run failed, attempting to parse existing results:", err.message);
     }
@@ -379,13 +378,13 @@ async generateCoverageReport(playerTestsDir) {
       };
     }
 
-    console.log("📄 Coverage file found:", coverageFile);
+
 
     // ✅ Parse XML safely
     let xml;
     try {
       xml = fs.readFileSync(coverageFile, "utf8");
-      console.log("📦 Coverage XML size:", xml.length, "bytes");
+
     } catch (err) {
       throw new Error(`Failed to read coverage file: ${err.message}`);
     }
@@ -395,7 +394,7 @@ async generateCoverageReport(playerTestsDir) {
     const branchRateMatch = xml.match(/branch-rate="([\d.]+)"/);
     const lineRate = lineRateMatch ? parseFloat(lineRateMatch[1]) * 100 : 0;
     const branchRate = branchRateMatch ? parseFloat(branchRateMatch[1]) * 100 : 0;
-    console.log(`📊 Coverage rates → Lines: ${lineRate.toFixed(1)}%, Branches: ${branchRate.toFixed(1)}%`);
+
 
     // ✅ Extract BaseCode.cs block
     const fileMatch = xml.match(/<class[^>]*filename="[^"]*BaseCode\.cs"[^>]*>[\s\S]*?<\/class>/);
@@ -435,7 +434,7 @@ async generateCoverageReport(playerTestsDir) {
       ? ((coveredLines / validLines) * 100).toFixed(1)
       : 0;
 
-    console.log(`✅ Coverage Summary → ${validLines} lines, ${coveredLines} covered (${coverageSummary}%)`);
+
 
     return {
       success: true,
@@ -480,7 +479,7 @@ findCoverageFile(testResultsDir) {
           entry.name.endsWith(".xml") || 
           entry.name === "coverage.cobertura.xml"
         ) {
-          console.log("📍 Found coverage file:", entry.name);
+
           return fullPath;
         }
       } catch (err) {
@@ -511,7 +510,7 @@ async calculateTestLines(code) {
       .map(line => line.trim())
       .filter(line => line.length > 0 && line !== "{" && line !== "}");
 
-    console.log(`📘 Calculated ${lines.length} test lines from code string`);
+
     return {  success: true ,totalTestLines: lines.length};
   } catch (error) {
     console.error("❌ Error calculating test lines:", error);
@@ -521,10 +520,7 @@ async calculateTestLines(code) {
 
 
 async generateMutationReport(playerTestsDir,projectDir) {
-  console.log("projectDir:", projectDir);
-  console.log("playerTestsDir:", playerTestsDir);
 
-  console.log("🧬 Starting mutation testing for:", playerTestsDir);
 
   try {
     // 1️⃣ Ensure Stryker is installed
@@ -542,8 +538,7 @@ const tempDir = path.dirname(playerTestsDir); // temp folder containing PlayerCo
 const playerCodeProj = path.join(tempDir, "PlayerCode", "PlayerCode.csproj");
 const playerTestsProj = path.join(playerTestsDir, "PlayerTests.csproj");
 
-console.log("playerCodeProj:", playerCodeProj);
-console.log("playerTestsProj:", playerTestsProj);
+
 
 // always recreate solution
 if (fs.existsSync(solutionPath)) {
@@ -586,7 +581,7 @@ const reportPath = possibleReportFiles.find(f => fs.existsSync(f));
 if (!reportPath) throw new Error("Report file not found");
 
   const data = JSON.parse(fs.readFileSync(reportPath, "utf8"));
-  console.log("📊 Parsed mutation report");
+
 
   // 5️⃣ Extract mutants
   const mutants = Object.values(data.files || {}).flatMap(file =>
@@ -700,7 +695,7 @@ async getRandomChallenge() {
     try {
       if (fs.existsSync(projectDir)) {
         await fs.promises.rm(projectDir, { recursive: true, force: true });
-        console.log(`🧹 Cleaned up project directory: ${projectDir}`);
+
       }
     } catch (error) {
       console.error(`❌ Failed to clean up ${projectDir}:`, error);

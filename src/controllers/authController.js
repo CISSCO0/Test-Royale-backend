@@ -7,7 +7,7 @@ class AuthController {
   // POST /api/auth/start-registration
   async startRegistration(req, res) {
     try {
-      console.log("Received registration data:", req.body);
+
       const result = await authService.startRegistration(req.body);
 
       if (!result.success) {

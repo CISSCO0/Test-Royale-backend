@@ -155,7 +155,7 @@ catch(error){
         });
       }
 
-      console.log(`🧬 Generating mutation Menna for: ${playerTestsDir}`);
+
 
       const report = await codeService.generateMutationReport(playerTestsDir,projectDir);
 

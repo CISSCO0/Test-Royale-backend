@@ -163,7 +163,7 @@ async submitTestCode(gameId, playerId, testCode) {
     // Update in-memory version if it exists
     const activeGame = this.activeGames.get(gameId.toString());
     if (activeGame) {
-    console.log (" Menna is happy 4 ")
+
 
       const activePlayerIndex = activeGame.players.findIndex(
         p => p.playerId.toString() === playerId.toString()
@@ -173,7 +173,7 @@ async submitTestCode(gameId, playerId, testCode) {
         activeGame.players[activePlayerIndex].submittedAt = new Date();
       }
     }
-    console.log (" Menna is happy 3 ")
+
 
     return {
       success: true,
@@ -288,7 +288,7 @@ async calculatePlayerData (gameId, playerId , testCode){
       }   
 
       const baseCode = game.codeId.baseCode;
-      console.log(" here is basecode ", baseCode); 
+ 
 
       const tempRootDir = path.join(process.cwd(), 'temp');
       
@@ -303,9 +303,9 @@ async calculatePlayerData (gameId, playerId , testCode){
 
       const executionTime = runCode.executionTime ;
       const testStats = runCode.stats ;
-      console.log("runCode object:\n" + JSON.stringify(runCode, null, 2));
+
       const playerTestDir = runCode.playerTestsDir ;
-      console.log(" playerTestDir ", playerTestDir);
+
       let coverageReport;
 try {
   console.log("Starting coverage report...");
@@ -315,14 +315,14 @@ try {
   console.error("Coverage report error:", e);
 }
 
-      console.log("coverage object:\n" + JSON.stringify(coverageReport, null, 2));
+
 
       if(!coverageReport.success){
 
         return { success:false ,error: coverageReport.error};
 
       }
-      console.log("done with coverage report ");
+
 
 
       const lineCoverage = coverageReport.lineCoverage;
@@ -336,10 +336,10 @@ try {
       }
 
       const testLines = calculateTestLines.totalTestLines ;
-      console.log("done with test lines ");
+
       let generateMutationReport;
   try {
-          console.log("Finished Mutation report");
+
        generateMutationReport = await this.codeService.generateMutationReport(
         playerTestDir, tempRootDir
       )
@@ -352,7 +352,7 @@ try {
         return { success:false ,error: generateMutationReport.error};
       }
 
-       console.log("done with mutation  ");
+
       const mutants = generateMutationReport.mutants ;
       const mutantionSummary = generateMutationReport.summary;
       
@@ -367,7 +367,7 @@ try {
       (testLines *0.1)
       - (executionTime *0.1);
       
-      console.log(" mutants " + JSON.stringify(mutants) );
+
       
       gamePlayer.lineCoverage = lineCoverage;
       gamePlayer.lineRate = lineRate;
@@ -390,7 +390,7 @@ try {
       game.markModified("mutation");
       game.markModified("lineCoverage");
       await game.save();
-       console.log("hey 2");
+
       return {
       success: true,
       playerData: {
@@ -414,7 +414,7 @@ try {
       }
     };
   } catch (error){
-     console.log(error);
+
       return {
         success:false,
         error : error.message
@@ -660,7 +660,7 @@ try {
       if (!roomDeleteResult.success) {
         console.warn('⚠️ Warning: Could not delete room:', roomDeleteResult.error);
       } else {
-        console.log('✅ Room deleted:', game.roomCode);
+
       }
 
       // ✅ 7️⃣ Update Player objects with final stats
@@ -698,7 +698,7 @@ try {
         player.lastActive = new Date();
 
         await player.save();
-        console.log(`✅ Updated player stats: ${player._id}`);
+
       }
 
       // ✅ 8️⃣ Remove from active games

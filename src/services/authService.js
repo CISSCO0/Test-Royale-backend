@@ -147,7 +147,7 @@ async verifyRegistration(email, code, res) {
       // Generate JWT token and set cookie
       const token = this.generateToken(player._id);
       
-      console.log("Generated token for player:", token);
+
       // Make sure res object exists before using it
       if (res && typeof res.cookie === 'function') {
         res.cookie('auth_token', token, this.cookieOptions);
@@ -254,7 +254,7 @@ async verifyRegistration(email, code, res) {
           error: 'Player not found'
         };
       }
-      console.log(player);
+
       return {
         success: true,
         player: {

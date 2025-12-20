@@ -317,7 +317,7 @@ class RoomService {
   async leaveRoom(playerId) {
     
     try {
-      console.log("Leaving room for playerId:", playerId);
+
     
       const room = await Room.findOne({ 
         'players.playerId': playerId,
@@ -697,7 +697,7 @@ class RoomService {
       // Remove from memory
       this.activeRooms.delete(roomCode);
 
-      console.log(`🗑️ Room deleted: ${roomCode}`);
+
 
       return {
         success: true,
