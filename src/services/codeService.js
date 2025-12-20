@@ -73,11 +73,13 @@ class CodeService {
       execSync(`dotnet build "${playerTestsDir}" --no-restore`, { stdio: "pipe" });
       console.log("✅ PlayerTests project built successfully");
     } catch (buildError) {
-      // ✅ Parse build error properly
-      const errorMsg = buildError.stderr?.toString() || buildError.message || "Failed to build PlayerTests";
-      const cleanError = this._parseCompileError(errorMsg, "PlayerTests");
+      // ✅ Log full error details
+      const errorMsg = buildError.stderr?.toString() || buildError.stdout?.toString() || buildError.message || "Failed to build PlayerTests";
+      console.error("❌ RAW PlayerTests build error:", errorMsg);
       
-      console.error("❌ PlayerTests build failed:", cleanError);
+      const cleanError = this._parseCompileError(errorMsg, "PlayerTests");
+      console.error("❌ PlayerTests build failed (parsed):", cleanError);
+      
       // Cleanup on build error
       await this._cleanupProjectDir(projectDir);
       
