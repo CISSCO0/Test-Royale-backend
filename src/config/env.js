@@ -28,35 +28,11 @@ const config = {
   // Socket.io configuration
   socket: {
     cors: {
-      origin: function (origin, callback) {
-        const allowedOrigins = [
-          'http://localhost:3000',
-          'https://test-royale-36skzytqz-cissco0s-projects.vercel.app',
-          ...(process.env.CLIENT_URL 
-            ? process.env.CLIENT_URL.split(',').map(url => url.trim().replace(/\/$/, '')) 
-            : []
-          )
-        ];
-        
-        // Normalize the incoming origin by removing trailing slash
-        const normalizedOrigin = origin ? origin.replace(/\/$/, '') : origin;
-        
-        // Check if origin matches (including regex pattern)
-        const isAllowed = !origin || // Allow requests with no origin (like mobile apps, curl, etc.)
-          allowedOrigins.some(allowed => allowed === normalizedOrigin) ||
-          /^https:\/\/test-royale-.*\.vercel\.app$/.test(normalizedOrigin);
-        
-        if (isAllowed) {
-          callback(null, true);
-        } else {
-          console.log(`[CORS] Blocked origin: ${origin}`);
-          callback(new Error('Not allowed by CORS'));
-        }
-      },
+      origin: '*',
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
       exposedHeaders: ['Content-Range', 'X-Content-Range'],
-      credentials: true,
+      credentials: false, // Must be false when origin is '*'
       maxAge: 86400 // 24 hours
     },
     transports: ['websocket', 'polling']
