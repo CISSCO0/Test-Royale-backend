@@ -42,8 +42,9 @@ function createApp(server = null) {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV || 'development',
-      version: 'v1.0.1-cors-wildcard',
-      commit: '0cbcf03'
+      version: 'v1.0.2-cors-fixed',
+      commit: 'b98065f',
+      corsOrigin: process.env.CORS_ORIGIN || 'not set'
     });
   });
 
