@@ -32,7 +32,10 @@ const config = {
         'http://localhost:3000',
         'https://test-royale-36skzytqz-cissco0s-projects.vercel.app',
         /^https:\/\/test-royale-.*\.vercel\.app$/,
-        ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(url => url.trim()) : [])
+        ...(process.env.CLIENT_URL 
+          ? process.env.CLIENT_URL.split(',').map(url => url.trim().replace(/\/$/, '')) 
+          : []
+        )
       ],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
