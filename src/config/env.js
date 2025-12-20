@@ -6,7 +6,7 @@ const config = {
   host: process.env.HOST || 'localhost',
   
   // Client configuration
-  clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
+  clientUrl: process.env.CLIENT_URL || '*',
   
   // Database configuration (if needed in future)
   database: {
