@@ -4,7 +4,15 @@ const authService = new AuthService();
 
 const authMiddleware = async (req, res, next) => {
   try {
-    const token = req.cookies.auth_token;
+    // Try to get token from cookie first, then from Authorization header
+    let token = req.cookies.auth_token;
+    
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7); // Remove 'Bearer ' prefix
+      }
+    }
 
     if (!token) {
       return res.status(401).json({ 
