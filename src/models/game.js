@@ -3,6 +3,7 @@ const { Schema } = mongoose;
 
 const gameSchema = new Schema({
   roomCode: { type: String, required: true },
+  hostId: { type: Schema.Types.ObjectId, ref: 'Player' },
   codeId: { type: Schema.Types.ObjectId, ref: 'Code', required: true },
 
   players: [{

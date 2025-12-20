@@ -57,6 +57,7 @@ class GameService {
 
     const game = new Game({
       roomCode: room.code,
+      hostId: room.hostId,
       codeId: challenge.id,
       players: room.players.map(player => ({
         playerId: player.playerId._id || player.playerId,
