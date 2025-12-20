@@ -19,6 +19,14 @@ function createApp(server = null) {
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   app.use(cookieParser());
 
+  // CORS debugging middleware
+  app.use((req, res, next) => {
+    if (config.logging.enableConsole) {
+      console.log(`[CORS] ${req.method} ${req.path} - Origin: ${req.headers.origin || 'none'}`);
+    }
+    next();
+  });
+
   // Request logging middleware
   app.use((req, res, next) => {
     if (config.logging.enableConsole) {

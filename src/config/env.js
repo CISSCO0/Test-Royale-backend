@@ -34,8 +34,11 @@ const config = {
         /^https:\/\/test-royale-.*\.vercel\.app$/,
         ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(url => url.trim()) : [])
       ],
-      methods: ['GET', 'POST'],
-      credentials: true
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      exposedHeaders: ['Content-Range', 'X-Content-Range'],
+      credentials: true,
+      maxAge: 86400 // 24 hours
     },
     transports: ['websocket', 'polling']
   },
