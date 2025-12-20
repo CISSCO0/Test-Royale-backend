@@ -1,7 +1,6 @@
 
 const http = require('http');
 const express = require('express');
-const cors = require('cors');
 const { config, validateConfig } = require('./src/config/env');
 const createApp = require('./src/app');
 const connectDB = require('./src/config/db');
@@ -23,18 +22,7 @@ const server = http.createServer();
 const { app, io } = createApp(server);
 app.use(express.json());
 
-// Backend CORS configuration
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://test-royale-36skzytqz-cissco0s-projects.vercel.app',
-    /^https:\/\/test-royale-.*\.vercel\.app$/,
-    ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(url => url.trim()) : [])
-  ],
-  credentials: true
-}));
-
-
+// CORS is already configured in src/app.js
 
 // Mount Express app on the server
 server.on('request', app);
