@@ -42,18 +42,33 @@ class CodeService {
     fs.writeFileSync(testPath, tests);
     console.log(" PlayerTests.cs written to PlayerTests project");
     
-    // 6️⃣ Restore NuGet packages for PlayerTests
+    // 6️⃣ Define directories
     const playerTestsDir = path.join(projectDir, "PlayerTests");
+    const playerCodeDir = path.join(projectDir, "PlayerCode");
+    
+    // 7️⃣ Restore NuGet packages
+    console.log("📦 Restoring NuGet packages...");
+    try {
+      execSync(`dotnet restore "${playerTestsDir}"`, { 
+        stdio: "pipe",
+        timeout: 30000 
+      });
+      console.log("✅ NuGet packages restored successfully");
+    } catch (restoreError) {
+      const errorMsg = restoreError.stderr?.toString() || restoreError.stdout?.toString() || restoreError.message;
+      console.error("❌ NuGet restore failed:", errorMsg);
+      await this._cleanupProjectDir(projectDir);
+      throw new Error(`NuGet Restore Error: ${errorMsg}`);
+    }
       
     const timeNow1 = Date.now();
     console.log(`🕒 Time after setup: ${(timeNow1 - totalTime) / 1000}s`);
 
-    // 7️⃣ Build the PlayerCode library
-    const playerCodeDir = path.join(projectDir, "PlayerCode");
+    // 8️⃣ Build the PlayerCode library
     
     console.log("🔨 Building PlayerCode library...");
     try {
-      execSync(`dotnet build "${playerCodeDir}" --no-restore`, { stdio: "pipe" });
+      execSync(`dotnet build "${playerCodeDir}"`, { stdio: "pipe" });
       console.log("✅ PlayerCode library built successfully");
     } catch (buildError) {
       // ✅ Parse build error properly
@@ -70,7 +85,7 @@ class CodeService {
     // 8️⃣ Build the PlayerTests project
     console.log("🔨 Building PlayerTests project...");
     try {
-      execSync(`dotnet build "${playerTestsDir}" --no-restore`, { stdio: "pipe" });
+      execSync(`dotnet build "${playerTestsDir}"`, { stdio: "pipe" });
       console.log("✅ PlayerTests project built successfully");
     } catch (buildError) {
       // ✅ Log full error details
