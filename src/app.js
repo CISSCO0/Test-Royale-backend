@@ -13,8 +13,21 @@ const Code = require('./models/code');
 function createApp(server = null) {
   const app = express();
 
+  // CORS configuration - allow specific origins with credentials
+  const corsOptions = {
+    origin: [
+      'http://localhost:3000',
+      'https://test-royale-36skzytqz-cissco0s-projects.vercel.app',
+      /^https:\/\/test-royale-.*\.vercel\.app$/
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true,
+    maxAge: 86400
+  };
+
   // Middleware
-  app.use(cors(config.socket.cors));
+  app.use(cors(corsOptions));
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   app.use(cookieParser());

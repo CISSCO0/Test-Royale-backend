@@ -28,11 +28,15 @@ const config = {
   // Socket.io configuration
   socket: {
     cors: {
-      origin: process.env.CORS_ORIGIN || '*',
+      origin: [
+        'http://localhost:3000',
+        'https://test-royale-36skzytqz-cissco0s-projects.vercel.app',
+        /^https:\/\/test-royale-.*\.vercel\.app$/
+      ],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
       exposedHeaders: ['Content-Range', 'X-Content-Range'],
-      credentials: process.env.CORS_ORIGIN === '*' ? false : true,
+      credentials: true,
       maxAge: 86400 // 24 hours
     },
     transports: ['websocket', 'polling']
