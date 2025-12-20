@@ -1,13 +1,5 @@
 const nodemailer = require("nodemailer");
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.SMTP_EMAIL,
-    pass: process.env.SMTP_PASSWORD
-  }
-});
-
 async function sendEmail(to, message) {
   try {
     // Check if SMTP credentials are configured
@@ -16,6 +8,15 @@ async function sendEmail(to, message) {
       console.log('📧 Verification code for', to, ':', message.match(/\d{6}/)?.[0]);
       return { success: true, message: 'Email service not configured' };
     }
+
+    // Create transporter only when needed and credentials are available
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.SMTP_EMAIL,
+        pass: process.env.SMTP_PASSWORD
+      }
+    });
 
     await transporter.sendMail({
       from: process.env.SMTP_EMAIL,
