@@ -6,10 +6,11 @@ class AuthService {
   constructor() {
     this.jwtSecret = process.env.JWT_SECRET;
     this.jwtExpiry = process.env.JWT_EXPIRY || '24h';
+    const isProduction = process.env.NODE_ENV === 'production';
     this.cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: isProduction, // Must be true when sameSite is 'none'
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 , // 7 days
       path: "/"  
     };
