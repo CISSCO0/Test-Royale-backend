@@ -37,6 +37,16 @@ function createApp(server = null) {
     });
   });
 
+  // CORS debug endpoint
+  app.get('/api/cors-config', (req, res) => {
+    res.json({
+      configuredOrigins: config.socket.cors.origin,
+      clientUrlEnv: process.env.CLIENT_URL || 'not set',
+      requestOrigin: req.headers.origin || 'no origin header',
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // API routes
   app.get('/api/status', (req, res) => {
     res.json({
