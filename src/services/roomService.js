@@ -674,6 +674,43 @@ class RoomService {
   clearRoomFromMemory(roomCode) {
     this.activeRooms.delete(roomCode);
   }
+
+  /**
+   * Delete a room (from database and memory)
+   * @param {string} roomCode - Room code
+   * @returns {Object} Delete result
+   */
+  async deleteRoom(roomCode) {
+    try {
+      const room = await Room.findOne({ code: roomCode });
+      
+      if (!room) {
+        return {
+          success: false,
+          error: 'Room not found'
+        };
+      }
+
+      // Delete from database
+      await Room.findByIdAndDelete(room._id);
+      
+      // Remove from memory
+      this.activeRooms.delete(roomCode);
+
+      console.log(`🗑️ Room deleted: ${roomCode}`);
+
+      return {
+        success: true,
+        message: `Room ${roomCode} deleted successfully`
+      };
+    } catch (error) {
+      console.error('Error deleting room:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
 }
 
 module.exports = RoomService;
