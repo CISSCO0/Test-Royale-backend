@@ -4,7 +4,35 @@ const authService = new AuthService();
 
 class AuthController {
   
-  // POST /api/auth/start-registration
+  // POST /api/auth/register (direct registration without email)
+  async register(req, res) {
+    try {
+      const result = await authService.register(req.body);
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      // Set cookie
+      if (result.token) {
+        const isProduction = process.env.NODE_ENV === 'production';
+        res.cookie("auth_token", result.token, {
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: isProduction ? 'none' : 'lax',
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          path: "/"
+        });
+      }
+
+      return res.status(200).json(result);
+
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+  
+  // POST /api/auth/start-registration (deprecated but kept for backward compatibility)
   async startRegistration(req, res) {
     try {
 

@@ -17,11 +17,48 @@ class AuthService {
   }
 
   /**
-   * 
+   * Register a new player (direct registration without email verification)
    * @param {*} playerData 
    * @returns 
    */
+  async register(playerData) {
+    const { email, password, name } = playerData;
 
+    if (!email || !password) {
+      return { success: false, error: "Email and password are required" };
+    }
+
+    const existingPlayer = await Player.findOne({ email });
+    if (existingPlayer) {
+      return { success: false, error: "Email already registered" };
+    }
+
+    const player = new Player({
+      email,
+      password,
+      name: name || "Unknown Player"
+    });
+
+    await player.save();
+
+    const token = this.generateToken(player._id);
+
+    return {
+      success: true,
+      token,
+      player: {
+        _id: player._id,
+        email: player.email,
+        name: player.name,
+        totalScore: player.totalScore,
+        averageScore: player.averageScore
+      }
+    };
+  }
+
+  /**
+   * Start registration with email verification (deprecated - keeping for compatibility)
+   */
   async startRegistration(playerData) {
   const { email, password, name } = playerData;
 
