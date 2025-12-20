@@ -17,6 +17,7 @@ function createApp(server = null) {
   const corsOptions = {
     origin: [
       'http://localhost:3000',
+      'https://test-royale.vercel.app',
       'https://test-royale-36skzytqz-cissco0s-projects.vercel.app',
       /^https:\/\/test-royale-.*\.vercel\.app$/
     ],
