@@ -51,14 +51,16 @@ class CodeService {
     // 7️⃣ Build the PlayerCode library
     const playerCodeDir = path.join(projectDir, "PlayerCode");
     
+    console.log("🔨 Building PlayerCode library...");
     try {
       execSync(`dotnet build "${playerCodeDir}" --no-restore`, { stdio: "pipe" });
-      console.log("PlayerCode library built");
+      console.log("✅ PlayerCode library built successfully");
     } catch (buildError) {
       // ✅ Parse build error properly
       const errorMsg = buildError.stderr?.toString() || buildError.message || "Failed to build PlayerCode";
       const cleanError = this._parseCompileError(errorMsg, "PlayerCode");
       
+      console.error("❌ PlayerCode build failed:", cleanError);
       // Cleanup on build error
       await this._cleanupProjectDir(projectDir);
       
@@ -66,14 +68,16 @@ class CodeService {
     }
 
     // 8️⃣ Build the PlayerTests project
+    console.log("🔨 Building PlayerTests project...");
     try {
       execSync(`dotnet build "${playerTestsDir}" --no-restore`, { stdio: "pipe" });
-      console.log("PlayerTests project built");
+      console.log("✅ PlayerTests project built successfully");
     } catch (buildError) {
       // ✅ Parse build error properly
       const errorMsg = buildError.stderr?.toString() || buildError.message || "Failed to build PlayerTests";
       const cleanError = this._parseCompileError(errorMsg, "PlayerTests");
       
+      console.error("❌ PlayerTests build failed:", cleanError);
       // Cleanup on build error
       await this._cleanupProjectDir(projectDir);
       
@@ -81,6 +85,7 @@ class CodeService {
     }
 
     // 9️⃣ Run tests - UPDATED with TRX logger to capture Console.WriteLine
+    console.log("🧪 Running tests...");
     const runCmd = `dotnet test "${playerTestsDir}" --no-build --logger trx`;
     const startTime = Date.now();
 
@@ -107,6 +112,8 @@ class CodeService {
         const passed = passMatch ? parseInt(passMatch[1]) : 0;
         const failed = failMatch ? parseInt(failMatch[1]) : 0;
         const total = totalMatch ? parseInt(totalMatch[1]) : 0;
+        
+        console.log(`📊 Test Results: Passed=${passed}, Failed=${failed}, Total=${total}`);
 
         // ✅ NEW: Read TRX file to get Console.WriteLine output
         let consoleOutput = '';
