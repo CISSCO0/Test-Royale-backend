@@ -79,30 +79,13 @@ class AuthService {
     { upsert: true }
   );
 
-  const emailResult = await sendEmail(
-  email,
-  `Hello,
-
-Thank you for registering at Warrior Arena! 
-
-Please use the following verification code to complete your registration:
-
-${code}
-
-This code will expire in 5 minutes.
-
-If you did not sign up for an account, please ignore this email.
-
-See you in the battle!
-- The Warrior Arena Team`
-);
-
-  // Even if email fails, allow registration to proceed (code is logged for manual verification)
-  if (!emailResult.success) {
-    console.warn(`⚠️ Email delivery failed for ${email}, but registration can proceed`);
-  }
-
-  return { success: true, message: "Verification code sent", code: process.env.NODE_ENV === 'development' ? code : undefined };
+  // Email sending disabled - direct registration is now preferred
+  // Code is returned in development mode for testing
+  return { 
+    success: true, 
+    message: "Verification code sent",
+    code: process.env.NODE_ENV === 'development' ? code : undefined 
+  };
 }
 
 async verifyRegistration(email, code, res) {
