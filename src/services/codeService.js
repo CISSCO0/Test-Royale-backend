@@ -42,14 +42,25 @@ class CodeService {
     fs.writeFileSync(testPath, tests);
     console.log(" PlayerTests.cs written to PlayerTests project");
     
-    // 6️⃣ Restore NuGet packages for PlayerTests
+    // 6️⃣ Restore NuGet packages for the solution
     const playerTestsDir = path.join(projectDir, "PlayerTests");
+    const playerCodeDir = path.join(projectDir, "PlayerCode");
+    
+    try {
+      console.log("🔄 Restoring NuGet packages...");
+      execSync(`dotnet restore "${projectDir}"`, { stdio: "pipe" });
+      console.log("✅ NuGet packages restored");
+    } catch (restoreError) {
+      const errorMsg = restoreError.stderr?.toString() || restoreError.message || "Failed to restore packages";
+      console.error("❌ Restore error:", errorMsg);
+      await this._cleanupProjectDir(projectDir);
+      throw new Error(`Package Restore Error: ${errorMsg}`);
+    }
       
     const timeNow1 = Date.now();
     console.log(`🕒 Time after setup: ${(timeNow1 - totalTime) / 1000}s`);
 
     // 7️⃣ Build the PlayerCode library
-    const playerCodeDir = path.join(projectDir, "PlayerCode");
     
     try {
       execSync(`dotnet build "${playerCodeDir}" --no-restore`, { stdio: "pipe" });
