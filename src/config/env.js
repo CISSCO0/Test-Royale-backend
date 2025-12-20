@@ -28,11 +28,11 @@ const config = {
   // Socket.io configuration
   socket: {
     cors: {
-      origin: '*',
+      origin: process.env.CORS_ORIGIN || '*',
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
       exposedHeaders: ['Content-Range', 'X-Content-Range'],
-      credentials: false, // Must be false when origin is '*'
+      credentials: process.env.CORS_ORIGIN === '*' ? false : true,
       maxAge: 86400 // 24 hours
     },
     transports: ['websocket', 'polling']
