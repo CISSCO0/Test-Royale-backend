@@ -550,7 +550,7 @@ execSync(`dotnet sln "${solutionPath}" add "${playerTestsProj}"`, { cwd: project
     // 3️⃣ Run Stryker
     const strykerCmd = `dotnet stryker --solution "${solutionPath}" --test-project "${playerTestsProj}" --reporter json --output "${projectDir}/StrykerOutput"`;
 
-    const strykerResult = await runStrykerCommand(strykerCmd, [], playerTestsDir);
+    execSync(strykerCmd, { cwd: projectDir, stdio: "inherit", timeout: 300000 });
 
   // 4️⃣ Parse report
   const strykerOutputDir = path.join(projectDir, "StrykerOutput");
