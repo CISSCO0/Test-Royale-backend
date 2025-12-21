@@ -523,16 +523,9 @@ async generateMutationReport(playerTestsDir,projectDir) {
 
 
   try {
-    // 1️⃣ Ensure Stryker is installed
-    try {
-      execSync('dotnet tool list -g', { stdio: 'pipe', encoding: 'utf8' });
-      console.log("✅ Checking for Stryker.NET...");
-    } catch {
-      console.log("📦 Installing Stryker.NET globally...");
-      execSync('dotnet tool install -g dotnet-stryker', { stdio: 'inherit' });
-    }
+    // Create solution and run Stryker (assumes dotnet-stryker is already installed globally)
 
-  // 2️⃣ Create solution if missing
+  // Create solution if missing
 const solutionPath = path.join(projectDir, "TempSolution.sln");
 const tempDir = path.dirname(playerTestsDir); // temp folder containing PlayerCode and PlayerTests
 const playerCodeProj = path.join(tempDir, "PlayerCode", "PlayerCode.csproj");
@@ -549,17 +542,9 @@ execSync(`dotnet new sln -n TempSolution`, { cwd: projectDir });
 execSync(`dotnet sln "${solutionPath}" add "${playerCodeProj}"`, { cwd: projectDir });
 execSync(`dotnet sln "${solutionPath}" add "${playerTestsProj}"`, { cwd: projectDir });
 
-    // 3️⃣ Run Stryker
-    const strykerCmd = `dotnet stryker --solution "${solutionPath}" --test-project "${playerTestsProj}" --reporter json --output "${projectDir}/StrykerOutput"`;
-
-    console.log("🧬 Running Stryker mutation testing...");
-    console.log("📂 Solution:", solutionPath);
-
-    execSync(strykerCmd, { cwd: projectDir, stdio: "inherit", timeout: 300000 });
-
-    console.log("✅ Stryker completed successfully");
-
-  // 4️⃣ Parse report
+    // Run Stryker mutation testing (assumes dotnet-stryker is pre-installed globally)
+    const command = `dotnet stryker --solution "${solutionPath}" --test-project "${playerTestsProj}" --reporter json --output "${projectDir}/StrykerOutput"`;
+    const strykerResult = await runStrykerCommand(command, [], playerTestsDir);
   const strykerOutputDir = path.join(projectDir, "StrykerOutput");
 
   // Try to find timestamped folder first
