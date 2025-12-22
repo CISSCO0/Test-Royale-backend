@@ -671,18 +671,7 @@ rm -rf temp/player_*
 - **Concurrent Limit**: 3 simultaneous executions
 - **Queue Capacity**: Unlimited (memory-based)
 
-## 📄 License
 
-This project is part of Test Royale educational platform.
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit pull requests.
-
-## 📞 Support
-
-For issues or questions, please open an issue on GitHub.
-
----
 
 **Built with ❤️ using Node.js, Express, and .NET**
