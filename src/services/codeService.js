@@ -754,8 +754,8 @@ async getRandomChallenge() {
         const lineRate = playerData.lineRate || 0;
         const branchRate = playerData.branchCoverage || playerData.branchRate || 0;
         
-        doc.text(`Line Coverage: ${(lineRate * 100).toFixed(1)}%`);
-        doc.text(`Branch Coverage: ${(branchRate * 100).toFixed(1)}%`);
+        doc.text(`Line Coverage: ${lineRate.toFixed(1)}%`);
+        doc.text(`Branch Coverage: ${branchRate.toFixed(1)}%`);
         doc.moveDown(1.5);
 
         // Mutation Testing Section
@@ -767,31 +767,38 @@ async getRandomChallenge() {
           const killed = playerData.mutation.killed || 0;
           const survived = playerData.mutation.survived || 0;
           const mutTotal = killed + survived;
-          const mutationScore = mutTotal > 0 ? ((killed / mutTotal) * 100).toFixed(1) : '0.0';
+          const mutationScorePercent = playerData.mutation.score || 0;
           
           doc.text(`Mutants Killed: ${killed}`);
           doc.text(`Mutants Survived: ${survived}`);
-          doc.text(`Mutation Score: ${mutationScore}%`);
+          doc.text(`Mutation Score: ${mutationScorePercent.toFixed(1)}%`);
           doc.moveDown(1.5);
         }
 
         // Scores Section
-        doc.fontSize(16).fillColor('#1e293b').text('Final Scores', { underline: true });
+        doc.fontSize(16).fillColor('#1e293b').text('Score Breakdown', { underline: true });
         doc.moveDown(0.5);
         doc.fontSize(12).fillColor('#475569');
         
-        // Calculate component scores from the data
-        const coverageScore = (playerData.coverageSummary || 0) * 0.2 + (branchRate || 0) * 0.2;
-        const mutationScore = (playerData.mutation?.score || 0) * 0.4;
-        const testScore = (playerData.testLines || 0) * 0.1;
-        const timeDeduction = (playerData.executionTime || 0) * 0.1;
+        // Calculate component scores (matching backend formula)
+        const coverageSummary = playerData.coverageSummary || 0;
+        const mutationScoreValue = playerData.mutation?.score || 0;
+        const testLines = playerData.testLines || 0;
+        const executionTime = playerData.executionTime || 0;
         
-        doc.text(`Coverage Score: ${coverageScore.toFixed(2)}`);
-        doc.text(`Mutation Score: ${mutationScore.toFixed(2)}`);
-        doc.text(`Test Score: ${testScore.toFixed(2)}`);
-        doc.text(`Time Deduction: ${timeDeduction.toFixed(2)}`);
+        const mutationComponent = mutationScoreValue * 0.4;
+        const branchComponent = branchRate * 0.2;
+        const coverageComponent = coverageSummary * 0.2;
+        const testLinesComponent = testLines * 0.1;
+        const timeDeduction = executionTime * 0.1;
+        
+        doc.text(`Mutation Score (${mutationScoreValue.toFixed(1)}% × 40%): ${mutationComponent.toFixed(2)} points`);
+        doc.text(`Branch Coverage (${branchRate.toFixed(1)}% × 20%): ${branchComponent.toFixed(2)} points`);
+        doc.text(`Line Coverage (${coverageSummary}% × 20%): ${coverageComponent.toFixed(2)} points`);
+        doc.text(`Test Quality (${testLines} lines × 10%): ${testLinesComponent.toFixed(2)} points`);
+        doc.text(`Time Penalty (${executionTime.toFixed(2)}s × 10%): -${timeDeduction.toFixed(2)} points`);
         doc.moveDown(0.5);
-        doc.fontSize(14).fillColor('#2563eb').text(`Total Score: ${(playerData.totalScore || 0).toFixed(2)}`, { underline: true });
+        doc.fontSize(14).fillColor('#2563eb').text(`Total Score: ${(playerData.totalScore || 0).toFixed(2)} points`, { underline: true });
 
         // Footer
         doc.moveDown(2);
