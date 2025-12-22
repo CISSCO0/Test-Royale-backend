@@ -3,9 +3,13 @@ const  fs = require("fs");
 const  path =require("path");
 const { exec, execSync } = require("child_process");
 const PDFDocument = require('pdfkit');
+const PQueue = require('p-queue').default;
 
 class CodeService {
-  constructor() {}
+  constructor() {
+    // ✅ Create queue: max 3 concurrent test executions
+    this.testQueue = new PQueue({ concurrency: 3 });
+  }
   /**
    * compile and run CSharp code with coverlet
    * @param {string} code          // base code 
@@ -16,6 +20,18 @@ class CodeService {
    */
 
   async compileAndRunCSharpCode(code, tests, playerId, tempRootDir) {
+    // ✅ Wrap in queue to limit concurrency to 3
+    console.log(`🔄 Queue Status: ${this.testQueue.size} pending, ${this.testQueue.pending} running`);
+    
+    return this.testQueue.add(async () => {
+      return this._executeTestRun(code, tests, playerId, tempRootDir);
+    });
+  }
+
+  /**
+   * Internal method that actually executes the test run
+   */
+  async _executeTestRun(code, tests, playerId, tempRootDir) {
   let projectDir = null;
   
   try {
@@ -180,10 +196,10 @@ class CodeService {
           executionTime,
         };
 
-        // Schedule cleanup - delay for 10 minutes
+        // ✅ Schedule cleanup - reduced to 2 minutes
         setTimeout(async () => {
           await this._cleanupProjectDir(projectDir);
-        }, 600000);
+        }, 120000);
 
         resolve(results);
       });
