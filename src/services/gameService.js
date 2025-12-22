@@ -564,12 +564,52 @@ try {
         return { success: true, error: 'Game already finished' };
       }
 
+      // ✅ NEW: Auto-calculate missing player data before ending
+      console.log("🔍 Checking for incomplete player data...");
+      const tempRootDir = path.join(process.cwd(), 'temp');
+      
+      for (const gamePlayer of game.players) {
+        // Check if player has incomplete data (no mutation score or no coverage)
+        const hasIncompletData = 
+          !gamePlayer.mutation?.score || 
+          gamePlayer.mutation.score === 0 || 
+          !gamePlayer.lineRate || 
+          !gamePlayer.submission?.testCode;
+
+        if (hasIncompletData && gamePlayer.submission?.testCode) {
+          console.log(`⚙️ Auto-calculating data for player ${gamePlayer.playerId}...`);
+          
+          try {
+            const calculateResult = await this.calculatePlayerData(
+              gameId, 
+              gamePlayer.playerId.toString(), 
+              gamePlayer.submission.testCode
+            );
+            
+            if (calculateResult.success) {
+              console.log(`✅ Data calculated for player ${gamePlayer.playerId}`);
+            } else {
+              console.warn(`⚠️ Failed to calculate data for ${gamePlayer.playerId}:`, calculateResult.error);
+            }
+          } catch (calcError) {
+            console.error(`❌ Error calculating player data:`, calcError);
+          }
+        }
+      }
+
+      // Reload game to get updated player data
+      await game.save();
+      const updatedGame = await Game.findById(gameId).populate('codeId');
+      if (!updatedGame) {
+        return { success: false, error: 'Game not found after calculation' };
+      }
+
       // ✅ 1️⃣ Calculate game duration
-      const gameDuration = Math.round((Date.now() - game.startedAt) / 1000);
-      game.totalDuration = gameDuration;
+      const gameDuration = Math.round((Date.now() - updatedGame.startedAt) / 1000);
+      updatedGame.totalDuration = gameDuration;
 
       // ✅ 2️⃣ Calculate scores and rankings
-      const playerScores = game.players.map((player, index) => ({
+      const playerScores = updatedGame.players.map((player, index) => ({
         index,
         playerId: player.playerId,
         totalScore: player.totalScore || 0,
@@ -587,8 +627,8 @@ try {
       // game.winner = winner.playerId;
 
       // ✅ 4️⃣ Award badges to each player
-      for (let i = 0; i < game.players.length; i++) {
-        const gamePlayer = game.players[i];
+      for (let i = 0; i < updatedGame.players.length; i++) {
+        const gamePlayer = updatedGame.players[i];
         const badges = [];
 
         // 🎖️ Mutation Slayer: Kill ≥ 80% of mutants
@@ -658,13 +698,13 @@ try {
       }
 
       // ✅ 5️⃣ Update game state
-      game.gameState = 'finished';
-      game.markModified('players');
-      game.markModified('winner');
-      await game.save();
+      updatedGame.gameState = 'finished';
+      updatedGame.markModified('players');
+      updatedGame.markModified('winner');
+      await updatedGame.save();
 
       // ✅ 6️⃣ Delete the game room
-      const roomDeleteResult = await this.roomService.deleteRoom(game.roomCode);
+      const roomDeleteResult = await this.roomService.deleteRoom(updatedGame.roomCode);
       if (!roomDeleteResult.success) {
         console.warn('⚠️ Warning: Could not delete room:', roomDeleteResult.error);
       } else {
@@ -672,7 +712,7 @@ try {
       }
 
       // ✅ 7️⃣ Update Player objects with final stats
-      for (const gamePlayer of game.players) {
+      for (const gamePlayer of updatedGame.players) {
         const player = await Player.findById(gamePlayer.playerId);
         if (!player) continue;
 
@@ -681,7 +721,7 @@ try {
         player.totalScore = (player.totalScore || 0) + gamePlayer.totalScore;
         
         // Check if player won
-        if (gamePlayer.playerId.toString() === game.winner.toString()) {
+        if (gamePlayer.playerId.toString() === updatedGame.winner?.toString()) {
           player.totalGamesWon = (player.totalGamesWon || 0) + 1;
           player.currentStreak = (player.currentStreak || 0) + 1;
           player.bestStreak = Math.max(player.bestStreak || 0, player.currentStreak);
@@ -717,10 +757,10 @@ try {
         success: true,
         message: 'Game ended successfully',
         game: {
-          gameId: game._id,
-          winner: game.winner,
+          gameId: updatedGame._id,
+          winner: updatedGame.winner,
           gameDuration: gameDuration,
-          players: game.players.map(p => ({
+          players: updatedGame.players.map(p => ({
             playerId: p.playerId,
             totalScore: p.totalScore,
             badgesEarned: p.badgesEarned,
