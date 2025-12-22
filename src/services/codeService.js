@@ -735,9 +735,9 @@ async getRandomChallenge() {
         doc.moveDown(0.5);
         doc.fontSize(12).fillColor('#475569');
         
-        const passed = playerData.testsPassed || 0;
-        const failed = playerData.testsFailed || 0;
-        const total = playerData.testsTotal || 0;
+        const passed = playerData.stats?.passed || 0;
+        const failed = playerData.stats?.failed || 0;
+        const total = playerData.stats?.total || 0;
         const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : '0.0';
 
         doc.text(`Total Tests: ${total}`);
@@ -752,7 +752,7 @@ async getRandomChallenge() {
         doc.fontSize(12).fillColor('#475569');
         
         const lineRate = playerData.lineRate || 0;
-        const branchRate = playerData.branchRate || 0;
+        const branchRate = playerData.branchCoverage || playerData.branchRate || 0;
         
         doc.text(`Line Coverage: ${(lineRate * 100).toFixed(1)}%`);
         doc.text(`Branch Coverage: ${(branchRate * 100).toFixed(1)}%`);
@@ -780,9 +780,16 @@ async getRandomChallenge() {
         doc.moveDown(0.5);
         doc.fontSize(12).fillColor('#475569');
         
-        doc.text(`Coverage Score: ${(playerData.coverageScore || 0).toFixed(2)}`);
-        doc.text(`Mutation Score: ${(playerData.mutationScore || 0).toFixed(2)}`);
-        doc.text(`Test Score: ${(playerData.testScore || 0).toFixed(2)}`);
+        // Calculate component scores from the data
+        const coverageScore = (playerData.coverageSummary || 0) * 0.2 + (branchRate || 0) * 0.2;
+        const mutationScore = (playerData.mutation?.score || 0) * 0.4;
+        const testScore = (playerData.testLines || 0) * 0.1;
+        const timeDeduction = (playerData.executionTime || 0) * 0.1;
+        
+        doc.text(`Coverage Score: ${coverageScore.toFixed(2)}`);
+        doc.text(`Mutation Score: ${mutationScore.toFixed(2)}`);
+        doc.text(`Test Score: ${testScore.toFixed(2)}`);
+        doc.text(`Time Deduction: ${timeDeduction.toFixed(2)}`);
         doc.moveDown(0.5);
         doc.fontSize(14).fillColor('#2563eb').text(`Total Score: ${(playerData.totalScore || 0).toFixed(2)}`, { underline: true });
 
