@@ -1,335 +1,688 @@
-# Test Royale Services
+# 🎮 Test Royale - Backend
 
-This directory contains all the business logic services for the Test Royale multiplayer educational game backend.
+> High-performance Node.js backend API for Test Royale, a competitive multiplayer platform for software testing battles.
 
-## Services Overview
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-4.18-lightgrey)](https://expressjs.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-6+-green)](https://www.mongodb.com/)
+[![Socket.io](https://img.shields.io/badge/Socket.io-4-black)](https://socket.io/)
+[![Deployed on Railway](https://img.shields.io/badge/Deployed-Railway-purple)](https://railway.app/)
 
-### 🔐 AuthService
-Handles user authentication, registration, login, logout, and profile management.
+## 📋 Table of Contents
 
-**Key Features:**
-- User registration and login
-- JWT token generation and verification
-- Password hashing and validation
-- Profile management
-- Password change functionality
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [API Documentation](#api-documentation)
+- [Services](#services)
+- [Testing Workflow](#testing-workflow)
+- [Deployment](#deployment)
 
-**Usage:**
-```javascript
-const { authService } = require('./services');
+## 🌟 Overview
 
-// Register a new player
-const result = await authService.register({
-  email: 'player@example.com',
-  password: 'password123',
-  name: 'Player Name'
-});
+Test Royale Backend is a robust, scalable Node.js API that powers a real-time multiplayer competitive testing platform. It orchestrates C# test execution, code coverage analysis, mutation testing, and real-time game state management for up to hundreds of concurrent players.
 
-// Login
-const loginResult = await authService.login({
-  email: 'player@example.com',
-  password: 'password123'
-});
+**Live API:** [https://test-royale-backend.up.railway.app](https://test-royale-backend.up.railway.app)
+
+## ✨ Features
+
+### 🎮 Real-time Multiplayer
+- **WebSocket Communication** - Socket.io for instant updates
+- **Room Management** - Create, join, and manage game lobbies
+- **Player Ready System** - Synchronized game start mechanism
+- **Live Game State** - Real-time score updates and rankings
+
+### 🧪 Advanced Testing Pipeline
+- **C# Test Execution** - Compile and run MSTest projects
+- **Code Coverage Analysis** - Coverlet integration with XML reports
+- **Mutation Testing** - Stryker.NET for comprehensive mutation analysis
+- **Concurrent Queue System** - p-queue for handling multiple test executions (max 3 concurrent)
+- **Automatic Cleanup** - 2-minute temp file cleanup
+
+### 📊 Scoring & Analytics
+- **Multi-factor Scoring Algorithm**:
+  - Mutation Score (40%)
+  - Branch Coverage (20%)
+  - Line Coverage (20%)
+  - Test Lines (10%)
+  - Execution Time (-10%)
+- **Real-time Leaderboards** - Global and player-specific rankings
+- **Badge System** - Achievement-based recognition
+- **PDF Report Generation** - pdfkit-powered performance reports
+
+### 🔐 Security & Performance
+- **JWT Authentication** - Secure token-based auth
+- **Request Queue** - Prevents server overload (max 3 concurrent)
+- **Input Validation** - Comprehensive validation middleware
+- **Error Handling** - Graceful error recovery
+- **Auto-calculation** - Ensures complete data before game end
+
+## 🏗️ Architecture
+
+```
+┌─────────────┐       ┌──────────────┐       ┌─────────────┐
+│   Frontend  │◄─────►│   Backend    │◄─────►│   MongoDB   │
+│  (Next.js)  │       │  (Express)   │       │  (Database) │
+└─────────────┘       └──────────────┘       └─────────────┘
+                             │
+                             ├─────────► C# Test Execution
+                             │           (dotnet CLI)
+                             │
+                             ├─────────► Coverage Analysis
+                             │           (Coverlet)
+                             │
+                             └─────────► Mutation Testing
+                                         (Stryker.NET)
 ```
 
-### 👤 PlayerService
-Manages player data, statistics, and player-related operations.
+## 🛠️ Tech Stack
 
-**Key Features:**
-- Player profile management
-- Statistics tracking
-- Player search and filtering
-- Leaderboard generation
-- Achievement and badge tracking
+### Core
+- **Node.js 18+** - JavaScript runtime
+- **Express.js 4.18** - Web framework
+- **MongoDB 6+** - NoSQL database
+- **Mongoose** - MongoDB ODM
 
-**Usage:**
-```javascript
-const { playerService } = require('./services');
+### Real-time & Queue
+- **Socket.io 4** - WebSocket communication
+- **p-queue 8** - Promise-based queue with concurrency control
 
-// Get player profile
-const player = await playerService.getPlayer(playerId);
+### Testing Tools
+- **.NET SDK 6+** - Required for C# compilation
+- **Coverlet** - Code coverage tool
+- **Stryker.NET** - Mutation testing framework
+- **MSTest** - Testing framework
 
-// Update player stats after game
-await playerService.updatePlayerStats(playerId, {
-  score: 85,
-  won: true,
-  gameDuration: 180
-});
+### Utilities
+- **bcryptjs** - Password hashing
+- **jsonwebtoken** - JWT authentication
+- **pdfkit** - PDF report generation
+- **xml2js** - XML parsing for coverage reports
+- **nodemon** - Development auto-restart
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+```bash
+Node.js >= 18.0.0
+MongoDB >= 6.0.0
+.NET SDK >= 6.0.0
+npm >= 9.0.0
 ```
 
-### 🏠 RoomService
-Handles room creation, joining, leaving, and management.
+### Installation
 
-**Key Features:**
-- Room creation and management
-- Player joining and leaving
-- Ready status management
-- Game state tracking
-- Room cleanup
+```bash
+# Clone the repository
+git clone https://github.com/CISSCO0/Test-Royale-backend.git
+cd Test-Royale-backend
 
-**Usage:**
-```javascript
-const { roomService } = require('./services');
+# Install dependencies
+npm install
 
-// Create a room
-const room = await roomService.createRoom(hostId, {
-  maxPlayers: 4,
-  codeLength: 6
-});
+# Install .NET tools globally
+dotnet tool install --global coverlet.console
+dotnet tool install --global dotnet-stryker
 
-// Join a room
-const joinResult = await roomService.joinRoom(playerId, roomCode);
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your configuration
+
+# Run development server
+npm run dev
 ```
 
-### 🎮 GameService
-Manages game sessions, scoring, and game flow.
+The server will start on `http://localhost:3000`
 
-**Key Features:**
-- Game initialization and management
-- Test code submission
-- Score calculation
-- Game state management
-- Achievement and badge awarding
+### Build for Production
 
-**Usage:**
+```bash
+# Start production server
+npm start
+```
+
+## 📁 Project Structure
+
+```
+Backend/
+├── src/
+│   ├── controllers/          # Request handlers
+│   │   ├── authController.js
+│   │   ├── gameController.js
+│   │   ├── roomController.js
+│   │   └── codeController.js
+│   ├── services/            # Business logic
+│   │   ├── authService.js
+│   │   ├── gameService.js
+│   │   ├── codeService.js   # Test execution & analysis
+│   │   ├── roomService.js
+│   │   └── playerService.js
+│   ├── models/              # Mongoose schemas
+│   │   ├── player.js
+│   │   ├── game.js
+│   │   ├── room.js
+│   │   └── code.js
+│   ├── routes/              # API routes
+│   │   ├── authRoutes.js
+│   │   ├── gameRoutes.js
+│   │   └── codeRoutes.js
+│   ├── middleware/          # Express middleware
+│   │   ├── auth.js
+│   │   └── errorHandler.js
+│   ├── sockets/             # Socket.io handlers
+│   │   └── gameSocket.js
+│   └── utils/               # Utility functions
+├── CSharpTemplate/          # C# project templates
+│   ├── PlayerCode/          # Base code project
+│   └── PlayerTests/         # Test project template
+├── temp/                    # Temporary test execution files
+├── server.js               # Application entry point
+└── package.json
+```
+
+## 📡 API Documentation
+
+### Authentication
+
+#### Register Player
+```http
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Player Name",
+  "email": "player@example.com",
+  "password": "securepassword"
+}
+```
+
+#### Login
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "player@example.com",
+  "password": "securepassword"
+}
+
+Response:
+{
+  "success": true,
+  "token": "jwt_token",
+  "playerId": "player_id"
+}
+```
+
+### Room Management
+
+#### Create Room
+```http
+POST /api/rooms/create
+Authorization: Bearer <token>
+
+{
+  "playerId": "player_id"
+}
+
+Response:
+{
+  "success": true,
+  "room": {
+    "code": "ABC123",
+    "hostId": "player_id",
+    "players": [...],
+    "gameState": "waiting"
+  }
+}
+```
+
+#### Join Room
+```http
+POST /api/rooms/join
+Authorization: Bearer <token>
+
+{
+  "playerId": "player_id",
+  "roomCode": "ABC123"
+}
+```
+
+#### Set Ready Status
+```http
+POST /api/rooms/ready
+Authorization: Bearer <token>
+
+{
+  "playerId": "player_id",
+  "roomCode": "ABC123"
+}
+```
+
+### Game Operations
+
+#### Start Game
+```http
+POST /api/game/start
+Authorization: Bearer <token>
+
+{
+  "playerId": "player_id"
+}
+
+Response:
+{
+  "success": true,
+  "game": {
+    "_id": "game_id",
+    "roomCode": "ABC123",
+    "codeId": "challenge_id",
+    "players": [...],
+    "startedAt": "2025-01-01T00:00:00.000Z"
+  }
+}
+```
+
+#### Submit Test Code
+```http
+POST /api/game/submit
+Authorization: Bearer <token>
+
+{
+  "gameId": "game_id",
+  "playerId": "player_id",
+  "testCode": "/* C# test code */"
+}
+```
+
+#### Calculate Player Data
+```http
+POST /api/game/calculate
+Authorization: Bearer <token>
+
+{
+  "playerId": "player_id",
+  "gameId": "game_id"
+}
+
+Response:
+{
+  "success": true,
+  "playerData": {
+    "stats": { "passed": 10, "failed": 0, "total": 10 },
+    "coverageSummary": 95.5,
+    "lineRate": 95.5,
+    "branchCoverage": 90.0,
+    "mutation": {
+      "score": 85.0,
+      "killed": 17,
+      "survived": 3,
+      "total": 20
+    },
+    "testLines": 45,
+    "totalScore": 87.3,
+    "executionTime": 3.5
+  }
+}
+```
+
+#### End Game
+```http
+POST /api/game/end
+Authorization: Bearer <token>
+
+{
+  "gameId": "game_id"
+}
+```
+
+#### Get Game Results
+```http
+GET /api/game/results/:gameId
+Authorization: Bearer <token>
+
+Response:
+{
+  "success": true,
+  "playerData": [
+    {
+      "playerId": "player_id",
+      "playerName": "Player Name",
+      "totalScore": 87.3,
+      "lineRate": 95.5,
+      "mutation": {...},
+      "submission": {...}
+    }
+  ]
+}
+```
+
+### Code Execution
+
+#### Compile and Run C# Code
+```http
+POST /api/code/compile
+Authorization: Bearer <token>
+
+{
+  "baseCode": "/* C# base code */",
+  "testCode": "/* C# test code */",
+  "playerId": "player_id"
+}
+
+Response:
+{
+  "success": true,
+  "stdout": "Test execution output",
+  "stats": {
+    "passed": 10,
+    "failed": 0,
+    "total": 10,
+    "executionTime": "3.50"
+  }
+}
+```
+
+#### Generate PDF Report
+```http
+POST /api/code/generatePDFReport
+Authorization: Bearer <token>
+
+{
+  "playerId": "player_id",
+  "gameId": "game_id"
+}
+
+Response: PDF file (application/pdf)
+```
+
+### Leaderboard
+
+#### Get Global Leaderboard
+```http
+GET /api/leaderboard
+Authorization: Bearer <token>
+
+Response:
+{
+  "success": true,
+  "leaderboard": [
+    {
+      "playerId": "player_id",
+      "name": "Player Name",
+      "totalScore": 1250,
+      "totalGamesWon": 15,
+      "winRate": 75
+    }
+  ]
+}
+```
+
+## 🔧 Services Overview
+
+### CodeService
+Handles C# compilation, test execution, coverage, and mutation testing.
+
+**Key Methods:**
 ```javascript
-const { gameService } = require('./services');
+// Compile and run tests (queued, max 3 concurrent)
+await codeService.compileAndRunCSharpCode(baseCode, testCode, playerId, tempDir);
 
-// Start a game
-const game = await gameService.startGame(roomCode, codeId);
+// Generate coverage report
+await codeService.generateCoverageReport(projectDir);
+
+// Run mutation testing
+await codeService.generateMutationReport(projectDir, tempDir);
+
+// Generate PDF report
+await codeService.generatePDFReport(playerId, gameId);
+
+// Calculate test lines
+await codeService.calculateTestLines(testCode);
+```
+
+**Request Queue:**
+- Uses `p-queue` with concurrency limit of 3
+- Prevents server overload during competitions
+- Logs queue status: `🔄 Queue Status: X pending, Y running`
+
+### GameService
+Manages game sessions, scoring, and player data calculation.
+
+**Key Methods:**
+```javascript
+// Start new game
+await gameService.startGame(playerId);
 
 // Submit test code
 await gameService.submitTestCode(gameId, playerId, testCode);
 
-// Calculate scores
-const results = await gameService.calculateScores(gameId);
+// Calculate player performance
+await gameService.calculatePlayerData(gameId, playerId, testCode);
+
+// End game (auto-calculates missing data)
+await gameService.endGame(gameId);
+
+// Get game results
+await gameService.getGameResults(gameId);
 ```
 
-### 📝 CodeService
-Manages programming challenges and code templates.
+**Auto-calculation Feature:**
+- `endGame()` checks for incomplete player data
+- Automatically runs `calculatePlayerData()` if needed
+- Ensures all players have complete results
 
-**Key Features:**
-- Challenge creation and management
-- Language-specific challenges
-- Random challenge selection
-- Challenge search and filtering
+### RoomService
+Handles room creation, joining, and state management.
 
-**Usage:**
+**Key Methods:**
 ```javascript
-const { codeService } = require('./services');
+// Create room
+await roomService.createRoom(hostId);
 
-// Get all challenges
-const challenges = await codeService.getAllChallenges({
-  language: 'python',
-  limit: 10
-});
+// Join room
+await roomService.joinRoom(playerId, roomCode);
 
-// Get random challenge
-const randomChallenge = await codeService.getRandomChallenge('java');
+// Set player ready
+await roomService.setPlayerReady(playerId, roomCode);
+
+// Update game state
+await roomService.updateRoomGameState(roomCode, state, data);
 ```
 
-### 🏆 AchievementService
-Handles player achievements and progress tracking.
+### PlayerService
+Manages player profiles and statistics.
 
-**Key Features:**
-- Achievement management
-- Progress tracking
-- Automatic achievement awarding
-- Achievement statistics
-
-**Usage:**
+**Key Methods:**
 ```javascript
-const { achievementService } = require('./services');
+// Get player
+await playerService.getPlayer(playerId);
 
-// Get player achievements
-const achievements = await achievementService.getPlayerAchievements(playerId);
+// Update stats
+await playerService.updatePlayerStats(playerId, stats);
 
-// Check and award achievements
-const newAchievements = await achievementService.checkAndAwardAchievements(playerId, gameResult);
+// Get leaderboard
+await playerService.getLeaderboard();
 ```
 
-### 🎖️ BadgeService
-Manages player badges and special recognitions.
+## 🧪 Testing Workflow
 
-**Key Features:**
-- Badge management
-- Condition-based awarding
-- Badge statistics
-- Player badge tracking
+### C# Test Execution Pipeline
 
-**Usage:**
-```javascript
-const { badgeService } = require('./services');
-
-// Get player badges
-const badges = await badgeService.getPlayerBadges(playerId);
-
-// Check and award badges
-const newBadges = await badgeService.checkAndAwardBadges(playerId, gameResult, playerStats);
+```mermaid
+graph TD
+    A[Submit Test Code] --> B[Add to Queue]
+    B --> C[Compile PlayerCode]
+    C --> D[Compile PlayerTests]
+    D --> E[Run dotnet test]
+    E --> F[Extract Console Output]
+    F --> G[Generate Coverage Report]
+    G --> H[Run Stryker Mutation Testing]
+    H --> I[Calculate Total Score]
+    I --> J[Save to Database]
+    J --> K[Schedule Cleanup 2min]
 ```
 
-### 📊 LeaderboardService
-Provides ranking and leaderboard functionality.
-
-**Key Features:**
-- Overall leaderboards
-- Weekly and monthly rankings
-- Player ranking calculation
-- Statistics and analytics
-
-**Usage:**
-```javascript
-const { leaderboardService } = require('./services');
-
-// Get overall leaderboard
-const leaderboard = await leaderboardService.getOverallLeaderboard({
-  limit: 50,
-  sortBy: 'totalScore'
-});
-
-// Get player ranking
-const ranking = await leaderboardService.getPlayerRanking(playerId, 'weekly');
-```
-
-## Service Initialization
-
-The services can be initialized with default data using the initialization utility:
+### Scoring Algorithm
 
 ```javascript
-const { initializeServices, checkServiceStatus } = require('./services/initializeServices');
-
-// Initialize all services with default data
-const initResult = await initializeServices();
-
-// Check if services are properly initialized
-const status = await checkServiceStatus();
+totalScore = 
+  (mutationScore * 0.4) +
+  (branchCoverage * 0.2) +
+  (lineCoverage * 0.2) +
+  (testLines * 0.1) -
+  (executionTime * 0.1)
 ```
 
-## Default Data
+### Cleanup Strategy
+- **Timeout**: 2 minutes after test execution
+- **Location**: `/temp/player_<id>_<timestamp>/`
+- **Contents**: C# projects, coverage reports, mutation results
 
-The services come with default data:
+## 🔐 Environment Variables
 
-### Code Challenges
-- Simple Calculator (Python)
-- Palindrome Checker (Python)
-- Array Sum (Java)
-- String Reverser (C#)
+Create `.env` file in the root directory:
 
-### Achievements
-- First Victory
-- Win Streak Master
-- Dedicated Player
-- High Scorer
-- Test Coverage Expert
-- Speed Demon
-- Perfectionist
-- Veteran
-- Champion
-- Legend
+```env
+# Server
+PORT=3000
+NODE_ENV=production
 
-### Badges
-- Hot Streak
-- Rookie
-- Consistent Winner
-- Speed Runner
-- Test Master
-- Code Warrior
-- Marathon Player
-- Night Owl
-- Early Bird
-- Weekend Warrior
+# Database
+MONGODB_URI=mongodb://localhost:27017/test-royale
+# OR MongoDB Atlas
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/test-royale
 
-## Error Handling
+# Authentication
+JWT_SECRET=your_super_secret_jwt_key_here
+JWT_EXPIRE=7d
 
-All services return consistent error responses:
+# Frontend URL (for CORS)
+FRONTEND_URL=https://your-frontend-url.com
 
-```javascript
-{
-  success: false,
-  error: 'Error message',
-  // Additional error details if needed
-}
+# Optional: Socket.io configuration
+SOCKET_CORS_ORIGIN=https://your-frontend-url.com
 ```
 
-## Success Responses
+## 📦 Available Scripts
 
-All services return consistent success responses:
+```bash
+# Development
+npm run dev              # Start with nodemon (auto-restart)
 
-```javascript
-{
-  success: true,
-  // Service-specific data
-  message: 'Operation completed successfully' // Optional
-}
+# Production
+npm start                # Start production server
+
+# Database
+npm run seed             # Seed database with sample data
+npm run migrate          # Run database migrations
+
+# Utilities
+npm run clean:temp       # Clean temporary test files
 ```
 
-## Database Models
+## 🚢 Deployment
 
-The services work with the following MongoDB models:
+### Railway (Current Deployment)
 
-- **Player**: User accounts and statistics
-- **Room**: Game rooms and player management
-- **Game**: Game sessions and results
-- **Code**: Programming challenges
-- **Achievement**: Player achievements
-- **Badge**: Player badges
+1. **Connect Repository:**
+   - Link GitHub repository to Railway
+   - Select backend directory as root
 
-## Dependencies
+2. **Configure Environment:**
+   - Add all environment variables in Railway dashboard
+   - Set `MONGODB_URI` to MongoDB Atlas connection string
 
-- **MongoDB**: Database storage
-- **Mongoose**: ODM for MongoDB
-- **bcryptjs**: Password hashing
-- **jsonwebtoken**: JWT token management
-- **validator**: Input validation
+3. **Install .NET SDK:**
+   - Railway automatically detects Node.js
+   - Add build command: `apt-get update && apt-get install -y dotnet-sdk-6.0`
 
-## Usage in Controllers
+4. **Deploy:**
+   - Railway auto-deploys on push to `main`
+   - Build Command: `npm install`
+   - Start Command: `npm start`
 
-Services are designed to be used in Express.js controllers:
+### Docker Deployment
 
-```javascript
-const { authService, gameService } = require('../services');
+```dockerfile
+FROM node:18-alpine
 
-// In a controller
-exports.login = async (req, res) => {
-  try {
-    const result = await authService.login(req.body);
-    
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(400).json(result);
-    }
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error'
-    });
-  }
-};
+# Install .NET SDK
+RUN apk add --no-cache dotnet6-sdk
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "start"]
 ```
 
-## Testing
+## 🔧 Troubleshooting
 
-Each service can be tested independently:
+### Common Issues
 
-```javascript
-const { playerService } = require('./services');
+**Issue: .NET compilation fails**
+```bash
+# Verify .NET SDK installation
+dotnet --version
 
-// Test player creation
-const result = await playerService.getPlayer('playerId');
-console.log(result);
+# Install required tools
+dotnet tool install --global coverlet.console
+dotnet tool install --global dotnet-stryker
 ```
 
-## Performance Considerations
+**Issue: MongoDB connection fails**
+```
+Solution: Check MONGODB_URI in .env
+Ensure MongoDB is running (local) or accessible (Atlas)
+Verify network access and firewall rules
+```
 
-- Services use database queries efficiently
-- Leaderboard service includes caching
-- Room service maintains in-memory cache for active rooms
-- Pagination is implemented for large datasets
+**Issue: Queue not processing**
+```
+Solution: Check server logs for queue status
+Restart server to clear stuck queue
+Verify p-queue is installed: npm list p-queue
+```
 
-## Security
+**Issue: Temp files filling disk**
+```bash
+# Manual cleanup
+npm run clean:temp
 
-- Passwords are hashed using bcrypt
-- JWT tokens are used for authentication
-- Input validation is performed on all user inputs
-- SQL injection is prevented through Mongoose ODM
+# Or direct command
+rm -rf temp/player_*
+```
+
+## 📊 Performance Metrics
+
+- **Test Execution**: 2-5 seconds (C# compilation)
+- **Coverage Analysis**: 1-2 seconds (Coverlet)
+- **Mutation Testing**: 10-30 seconds (Stryker)
+- **Total Per Player**: ~15-40 seconds
+- **Concurrent Limit**: 3 simultaneous executions
+- **Queue Capacity**: Unlimited (memory-based)
+
+## 📄 License
+
+This project is part of Test Royale educational platform.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit pull requests.
+
+## 📞 Support
+
+For issues or questions, please open an issue on GitHub.
+
+---
+
+**Built with ❤️ using Node.js, Express, and .NET**
