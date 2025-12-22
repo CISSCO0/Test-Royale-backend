@@ -2,6 +2,7 @@ const Code = require('../models/code');
 const  fs = require("fs");      
 const  path =require("path");
 const { exec, execSync } = require("child_process");
+const PDFDocument = require('pdfkit');
 
 class CodeService {
   constructor() {}
@@ -526,7 +527,9 @@ async generateMutationReport(playerTestsDir,projectDir) {
     // 1️⃣ Ensure Stryker is installed
     try {
       execSync('dotnet tool list -g', { stdio: 'pipe', encoding: 'utf8' });
+      console.log("✅ Checking for Stryker.NET...");
     } catch {
+      console.log("📦 Installing Stryker.NET globally...");
       execSync('dotnet tool install -g dotnet-stryker', { stdio: 'inherit' });
     }
 
@@ -550,7 +553,12 @@ execSync(`dotnet sln "${solutionPath}" add "${playerTestsProj}"`, { cwd: project
     // 3️⃣ Run Stryker
     const strykerCmd = `dotnet stryker --solution "${solutionPath}" --test-project "${playerTestsProj}" --reporter json --output "${projectDir}/StrykerOutput"`;
 
+    console.log("🧬 Running Stryker mutation testing...");
+    console.log("📂 Solution:", solutionPath);
+
     execSync(strykerCmd, { cwd: projectDir, stdio: "inherit", timeout: 300000 });
+
+    console.log("✅ Stryker completed successfully");
 
   // 4️⃣ Parse report
   const strykerOutputDir = path.join(projectDir, "StrykerOutput");
@@ -678,6 +686,110 @@ async getRandomChallenge() {
   }
 }
 
+
+  /**
+   * Generate PDF report from player data
+   * @param {object} playerData - Player test results and coverage data
+   * @param {string} playerName - Player's name
+   * @param {string} challengeName - Challenge name
+   * @returns {Promise<Buffer>} PDF buffer
+   */
+  async generatePDFReport(playerData, playerName, challengeName) {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 50 });
+        const chunks = [];
+
+        // Collect PDF chunks
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        // Header
+        doc.fontSize(24).fillColor('#2563eb').text('Test Royale - Player Report', { align: 'center' });
+        doc.moveDown(0.5);
+        doc.fontSize(12).fillColor('#64748b').text(new Date().toLocaleDateString(), { align: 'center' });
+        doc.moveDown(2);
+
+        // Player Info Section
+        doc.fontSize(16).fillColor('#1e293b').text('Player Information', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(12).fillColor('#475569');
+        doc.text(`Name: ${playerName || 'Unknown Player'}`);
+        doc.text(`Challenge: ${challengeName || 'N/A'}`);
+        doc.moveDown(1.5);
+
+        // Test Results Section
+        doc.fontSize(16).fillColor('#1e293b').text('Test Results', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(12).fillColor('#475569');
+        
+        const passed = playerData.testsPassed || 0;
+        const failed = playerData.testsFailed || 0;
+        const total = playerData.testsTotal || 0;
+        const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : '0.0';
+
+        doc.text(`Total Tests: ${total}`);
+        doc.fillColor('#16a34a').text(`Passed: ${passed}`);
+        doc.fillColor('#dc2626').text(`Failed: ${failed}`);
+        doc.fillColor('#475569').text(`Pass Rate: ${passRate}%`);
+        doc.moveDown(1.5);
+
+        // Coverage Section
+        doc.fontSize(16).fillColor('#1e293b').text('Code Coverage', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(12).fillColor('#475569');
+        
+        const lineRate = playerData.lineRate || 0;
+        const branchRate = playerData.branchRate || 0;
+        
+        doc.text(`Line Coverage: ${(lineRate * 100).toFixed(1)}%`);
+        doc.text(`Branch Coverage: ${(branchRate * 100).toFixed(1)}%`);
+        doc.moveDown(1.5);
+
+        // Mutation Testing Section
+        if (playerData.mutation) {
+          doc.fontSize(16).fillColor('#1e293b').text('Mutation Testing', { underline: true });
+          doc.moveDown(0.5);
+          doc.fontSize(12).fillColor('#475569');
+          
+          const killed = playerData.mutation.killed || 0;
+          const survived = playerData.mutation.survived || 0;
+          const mutTotal = killed + survived;
+          const mutationScore = mutTotal > 0 ? ((killed / mutTotal) * 100).toFixed(1) : '0.0';
+          
+          doc.text(`Mutants Killed: ${killed}`);
+          doc.text(`Mutants Survived: ${survived}`);
+          doc.text(`Mutation Score: ${mutationScore}%`);
+          doc.moveDown(1.5);
+        }
+
+        // Scores Section
+        doc.fontSize(16).fillColor('#1e293b').text('Final Scores', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(12).fillColor('#475569');
+        
+        doc.text(`Coverage Score: ${(playerData.coverageScore || 0).toFixed(2)}`);
+        doc.text(`Mutation Score: ${(playerData.mutationScore || 0).toFixed(2)}`);
+        doc.text(`Test Score: ${(playerData.testScore || 0).toFixed(2)}`);
+        doc.moveDown(0.5);
+        doc.fontSize(14).fillColor('#2563eb').text(`Total Score: ${(playerData.totalScore || 0).toFixed(2)}`, { underline: true });
+
+        // Footer
+        doc.moveDown(2);
+        doc.fontSize(10).fillColor('#94a3b8').text(
+          'Generated by Test Royale - Competitive Testing Platform',
+          { align: 'center' }
+        );
+
+        // Finalize PDF
+        doc.end();
+
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
 
   /**
    * Clean up temporary project directory

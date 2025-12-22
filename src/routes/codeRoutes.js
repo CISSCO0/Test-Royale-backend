@@ -13,4 +13,9 @@ router.post("/calculateTestLines",codeController.calculateTestLines);
 router.post("/generateMutationReport", 
   codeController.generateMutationReport
 );
+
+router.post("/generatePDFReport", 
+  codeController.generatePDFReport
+);
+
 module.exports = router;

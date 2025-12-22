@@ -173,6 +173,44 @@ catch(error){
     }
   }
 
+  /**
+   * POST /api/code/generatePDFReport
+   * Generate PDF report from player data
+   */
+  async generatePDFReport(req, res) {
+    try {
+      const { playerData, playerName, challengeName } = req.body;
+
+      if (!playerData) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing playerData parameter",
+        });
+      }
+
+      const pdfBuffer = await codeService.generatePDFReport(
+        playerData,
+        playerName || 'Unknown Player',
+        challengeName || 'N/A'
+      );
+
+      // Set response headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="test-report-${Date.now()}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+
+      return res.send(pdfBuffer);
+
+    } catch (error) {
+      console.error("❌ Controller error in generatePDFReport:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to generate PDF report",
+        error: error.message,
+      });
+    }
+  }
+
 }
 
 module.exports = CodeController;
