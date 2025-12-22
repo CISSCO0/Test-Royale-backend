@@ -280,7 +280,13 @@ _parseTestOutput(stdout, stderr, consoleOutput = '') {
       'XUnit',
       'TestPlatform',
       'Logging Vstest',
-      'Logging TestHost'
+      'Logging TestHost',
+      'Results File:',
+      'TestResults',
+      '.trx',
+      '/app/temp/',
+      'player_',
+      'Attachments:'
     ];
 
     const lines = stdout.split('\n');
@@ -288,8 +294,13 @@ _parseTestOutput(stdout, stderr, consoleOutput = '') {
       .filter(line => {
         const trimmed = line.trim();
         
-        // Skip if it's a path
-        if (/^[A-Z]:\\/.test(trimmed) || /^\/[A-Za-z]/.test(trimmed)) {
+        // Skip if it's a path (Windows or Unix)
+        if (/^[A-Z]:\\/.test(trimmed) || /^\/[A-Za-z]/.test(trimmed) || trimmed.includes('/app/temp/')) {
+          return false;
+        }
+        
+        // Skip if it contains execution time with path pattern
+        if (/\(\d+\.\d+s\)$/.test(trimmed) && trimmed.includes('/')) {
           return false;
         }
         
