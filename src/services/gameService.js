@@ -241,12 +241,19 @@ async getLastSubmission(playerId, gameId) {
  
   async getGameResults(gameId) {
     try {
-      const game = await Game.findById(gameId);
+      const game = await Game.findById(gameId)
+        .populate('players.playerId', 'name email'); // Populate player names
+        
       if (!game){
         return { success:false , error:"Game not found"};
       }
 
-      const gameResults = game.players ;
+      // Transform the data to include player names directly
+      const gameResults = game.players.map(playerData => ({
+        ...playerData.toObject(),
+        playerName: playerData.playerId?.name || 'Unknown Player',
+        playerId: playerData.playerId?._id || playerData.playerId // Keep the ID as well
+      }));
 
       if(!gameResults)
       {
@@ -254,7 +261,7 @@ async getLastSubmission(playerId, gameId) {
       }
       return {
         success:true,
-        playerDate: gameResults
+        playerData: gameResults // Fixed typo: was playerDate
       }
     }
     catch (error){
