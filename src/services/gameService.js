@@ -308,6 +308,7 @@ async calculatePlayerData (gameId, playerId , testCode){
         return { success:false ,error: runCode.error};
       }
 
+      // ✅ Tests ran successfully (even if some failed)
       const executionTime = runCode.executionTime ;
       const testStats = runCode.stats ;
 

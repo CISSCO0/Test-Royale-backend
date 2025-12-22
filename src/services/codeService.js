@@ -165,7 +165,8 @@ class CodeService {
 
 
         const results = {
-          success: failed === 0,
+          success: true,  // ✅ Always return success if tests ran, regardless of pass/fail
+          allTestsPassed: failed === 0,  // ✅ Track if all tests passed
           stdout: cleanedOutput,  // ✅ Now includes Console.WriteLine
           stderr: errorOutput || (error ? error.message : ""),
           stats: {
